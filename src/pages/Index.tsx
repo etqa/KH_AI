@@ -21,9 +21,11 @@ const Index = () => {
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
 
   // Image generation states
-  const [originalImage, setOriginalImage] = useState<string | null>(null); // User's image to edit
-  const [editedImage, setEditedImage] = useState<string | null>(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [reEditedImage, setReEditedImage] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
 
   const handleToggle = useCallback((id: string) => {
@@ -56,7 +58,8 @@ const Index = () => {
 
     setLoading(true);
     setPrompt(null);
-    setEditedImage(null);
+    setGeneratedImage(null);
+    setReEditedImage(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("analyze-image", {
@@ -85,7 +88,7 @@ const Index = () => {
         body: {
           action: "edit",
           editImage: originalImage,
-          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}${editInstruction ? `\n\nAdditional instructions: ${editInstruction}` : ""}`,
+          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}`,
           referenceImage: image,
           model: imageModel,
         },
@@ -93,13 +96,39 @@ const Index = () => {
 
       if (error) throw error;
 
-      setEditedImage(data.image);
-      toast.success("تم تعديل الصورة بنجاح! 🎨");
+      setGeneratedImage(data.image);
+      toast.success("تم توليد الصورة بنجاح! 🎨");
     } catch (err: any) {
-      console.error("Error generating edited image:", err);
-      toast.error(err.message || "حدث خطأ أثناء تعديل الصورة");
+      console.error("Error generating image:", err);
+      toast.error(err.message || "حدث خطأ أثناء توليد الصورة");
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleReEditImage = async () => {
+    if (!generatedImage || !editInstruction) return;
+
+    setReEditingImage(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-image", {
+        body: {
+          action: "edit",
+          editImage: generatedImage,
+          editInstruction,
+          model: imageModel,
+        },
+      });
+
+      if (error) throw error;
+
+      setReEditedImage(data.image);
+      toast.success("تم تعديل الصورة بنجاح! ✏️");
+    } catch (err: any) {
+      console.error("Error re-editing image:", err);
+      toast.error(err.message || "حدث خطأ أثناء تعديل الصورة");
+    } finally {
+      setReEditingImage(false);
     }
   };
 
@@ -157,7 +186,7 @@ const Index = () => {
                     variant="ghost"
                     size="sm"
                     className="h-7 rounded-lg text-xs"
-                    onClick={() => { setOriginalImage(null); setEditedImage(null); }}
+                    onClick={() => { setOriginalImage(null); setGeneratedImage(null); setReEditedImage(null); }}
                   >
                     <X className="h-3.5 w-3.5 ml-1" />
                     تغيير
@@ -220,36 +249,51 @@ const Index = () => {
           <>
             <PromptResult prompt={prompt} />
 
-            {/* Edited Result */}
+            {/* Two result containers side by side */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mt-10"
             >
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                ✨ النتيجة بعد التعديل
+                🖼️ نتائج التوليد والتعديل
               </h2>
-              <ImageContainer
-                label="النتيجة بعد التعديل"
-                emoji="✨"
-                image={editedImage}
-                loading={generatingImage}
-                actionLabel="تطبيق البرومت على الصورة"
-                actionIcon="generate"
-                onAction={handleGenerateEditedImage}
-                disabled={!originalImage || !prompt}
-              />
-              {originalImage && (
-                <div className="mt-3">
-                  <Textarea
-                    value={editInstruction}
-                    onChange={(e) => setEditInstruction(e.target.value)}
-                    placeholder="تعليمات إضافية (اختياري)... مثال: اجعل الألوان أكثر دفئاً..."
-                    className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
-                    dir="rtl"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Container 1: Generated from prompt + reference */}
+                <ImageContainer
+                  label="النتيجة المولّدة"
+                  emoji="🎨"
+                  image={generatedImage}
+                  loading={generatingImage}
+                  actionLabel="تطبيق البرومت على الصورة"
+                  actionIcon="generate"
+                  onAction={handleGenerateEditedImage}
+                  disabled={!originalImage || !prompt}
+                />
+
+                {/* Container 2: Re-edited result */}
+                <div className="flex flex-col gap-3">
+                  <ImageContainer
+                    label="النتيجة بعد التعديل"
+                    emoji="✏️"
+                    image={reEditedImage}
+                    loading={reEditingImage}
+                    actionLabel="تعديل الصورة المولّدة"
+                    actionIcon="edit"
+                    onAction={handleReEditImage}
+                    disabled={!generatedImage || !editInstruction}
                   />
+                  {generatedImage && (
+                    <Textarea
+                      value={editInstruction}
+                      onChange={(e) => setEditInstruction(e.target.value)}
+                      placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
+                      className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
+                      dir="rtl"
+                    />
+                  )}
                 </div>
-              )}
+              </div>
             </motion.section>
           </>
         )}
