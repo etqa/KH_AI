@@ -209,31 +209,36 @@ const Index = () => {
                 />
 
                 {/* Container 2: Original Image to Edit (user uploads) */}
-                <div>
-                  <ImageContainer
-                    label="الصورة الأصلية للتعديل"
-                    emoji="🖼️"
-                    image={originalImage}
-                  />
-                  {!originalImage && (
-                    <div className="mt-3">
-                      <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
-                    </div>
-                  )}
-                  {originalImage && (
-                    <div className="mt-3 flex gap-2">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card rounded-xl p-4 gradient-border"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                      <span>🖼️</span>
+                      <span>الصورة الأصلية للتعديل</span>
+                    </h3>
+                    {originalImage && (
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="rounded-xl"
+                        className="h-7 rounded-lg text-xs"
                         onClick={() => { setOriginalImage(null); setEditedImage(null); }}
                       >
-                        <X className="h-4 w-4 ml-1" />
-                        تغيير الصورة
+                        <X className="h-3.5 w-3.5 ml-1" />
+                        تغيير
                       </Button>
+                    )}
+                  </div>
+                  {originalImage ? (
+                    <div className="rounded-xl overflow-hidden bg-muted/20">
+                      <img src={originalImage} alt="Original" className="w-full max-h-[350px] object-contain rounded-xl" />
                     </div>
+                  ) : (
+                    <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
                   )}
-                </div>
+                </motion.div>
 
                 {/* Container 3: Edited Result */}
                 <div>
