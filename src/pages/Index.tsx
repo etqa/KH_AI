@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,10 +21,9 @@ const Index = () => {
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
 
   // Image generation states
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null); // User's image to edit
   const [editedImage, setEditedImage] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
-  const [editingImage, setEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
 
   const handleToggle = useCallback((id: string) => {
@@ -57,7 +56,6 @@ const Index = () => {
 
     setLoading(true);
     setPrompt(null);
-    setGeneratedImage(null);
     setEditedImage(null);
 
     try {
@@ -77,16 +75,17 @@ const Index = () => {
     }
   };
 
-  const handleGenerateImage = async () => {
-    if (!prompt || !image) return;
+  const handleGenerateEditedImage = async () => {
+    if (!prompt || !originalImage) return;
 
     setGeneratingImage(true);
     try {
       const fullPrompt = buildFullPrompt(prompt, "en");
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
-          action: "generate",
-          prompt: fullPrompt,
+          action: "edit",
+          editImage: originalImage,
+          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}${editInstruction ? `\n\nAdditional instructions: ${editInstruction}` : ""}`,
           referenceImage: image,
           model: imageModel,
         },
@@ -94,39 +93,13 @@ const Index = () => {
 
       if (error) throw error;
 
-      setGeneratedImage(data.image);
-      toast.success("تم إنشاء الصورة بنجاح! 🎨");
-    } catch (err: any) {
-      console.error("Error generating image:", err);
-      toast.error(err.message || "حدث خطأ أثناء إنشاء الصورة");
-    } finally {
-      setGeneratingImage(false);
-    }
-  };
-
-  const handleEditImage = async () => {
-    if (!generatedImage) return;
-
-    setEditingImage(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-image", {
-        body: {
-          action: "edit",
-          editImage: generatedImage,
-          editInstruction: editInstruction || "Improve and enhance this image, make it more detailed and professional.",
-          model: imageModel,
-        },
-      });
-
-      if (error) throw error;
-
       setEditedImage(data.image);
-      toast.success("تم تعديل الصورة بنجاح! ✏️");
+      toast.success("تم تعديل الصورة بنجاح! 🎨");
     } catch (err: any) {
-      console.error("Error editing image:", err);
+      console.error("Error generating edited image:", err);
       toast.error(err.message || "حدث خطأ أثناء تعديل الصورة");
     } finally {
-      setEditingImage(false);
+      setGeneratingImage(false);
     }
   };
 
@@ -228,43 +201,58 @@ const Index = () => {
 
               {/* 3 Image Containers */}
               <div className="grid grid-cols-1 gap-4">
-                {/* Container 1: Original Image */}
+                {/* Container 1: Reference Image */}
                 <ImageContainer
-                  label="الصورة الأصلية"
+                  label="الصورة المرجعية"
                   emoji="📸"
                   image={image}
                 />
 
-                {/* Container 2: Generated Image from Prompt */}
-                <ImageContainer
-                  label="الصورة المولّدة من البرومت"
-                  emoji="🎨"
-                  image={generatedImage}
-                  loading={generatingImage}
-                  actionLabel="إنشاء صورة من البرومت"
-                  actionIcon="generate"
-                  onAction={handleGenerateImage}
-                  disabled={!prompt}
-                />
-
-                {/* Container 3: Edited Image */}
+                {/* Container 2: Original Image to Edit (user uploads) */}
                 <div>
                   <ImageContainer
-                    label="الصورة بعد التعديل"
-                    emoji="✏️"
-                    image={editedImage}
-                    loading={editingImage}
-                    actionLabel="تعديل الصورة المولّدة"
-                    actionIcon="edit"
-                    onAction={handleEditImage}
-                    disabled={!generatedImage}
+                    label="الصورة الأصلية للتعديل"
+                    emoji="🖼️"
+                    image={originalImage}
                   />
-                  {generatedImage && (
+                  {!originalImage && (
+                    <div className="mt-3">
+                      <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                    </div>
+                  )}
+                  {originalImage && (
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl"
+                        onClick={() => { setOriginalImage(null); setEditedImage(null); }}
+                      >
+                        <X className="h-4 w-4 ml-1" />
+                        تغيير الصورة
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Container 3: Edited Result */}
+                <div>
+                  <ImageContainer
+                    label="النتيجة بعد التعديل"
+                    emoji="✨"
+                    image={editedImage}
+                    loading={generatingImage}
+                    actionLabel="تطبيق البرومت على الصورة"
+                    actionIcon="generate"
+                    onAction={handleGenerateEditedImage}
+                    disabled={!originalImage || !prompt}
+                  />
+                  {originalImage && (
                     <div className="mt-3">
                       <Textarea
                         value={editInstruction}
                         onChange={(e) => setEditInstruction(e.target.value)}
-                        placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
+                        placeholder="تعليمات إضافية (اختياري)... مثال: اجعل الألوان أكثر دفئاً..."
                         className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
                         dir="rtl"
                       />
