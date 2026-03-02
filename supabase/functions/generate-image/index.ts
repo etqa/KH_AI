@@ -46,21 +46,23 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      messages = [
+      const editContent: any[] = [
         {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: editInstruction || "Improve and enhance this image while keeping the same composition and style.",
-            },
-            {
-              type: "image_url",
-              image_url: { url: editImage },
-            },
-          ],
+          type: "text",
+          text: editInstruction || "Improve and enhance this image while keeping the same composition and style.",
+        },
+        {
+          type: "image_url",
+          image_url: { url: editImage },
         },
       ];
+      if (referenceImage) {
+        editContent.push({
+          type: "image_url",
+          image_url: { url: referenceImage },
+        });
+      }
+      messages = [{ role: "user", content: editContent }];
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400,
