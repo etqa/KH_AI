@@ -112,7 +112,7 @@ const Index = () => {
         <div className="absolute -bottom-40 right-1/3 w-72 h-72 rounded-full bg-accent/10 blur-[100px]" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-2xl px-4 py-8 md:py-16">
+      <div className="relative z-10 mx-auto max-w-4xl px-4 py-8 md:py-16">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
@@ -127,14 +127,53 @@ const Index = () => {
           </p>
         </motion.header>
 
-        {/* Image Upload */}
+        {/* Two images side by side */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <ImageUploader image={image} onImageChange={setImage} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Right: Reference Image + Prompt Model */}
+            <div className="flex flex-col gap-3">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <span>📸</span>
+                <span>الصورة المرجعية</span>
+              </h3>
+              <ImageUploader image={image} onImageChange={setImage} />
+              <ModelSelector value={model} onChange={setModel} />
+            </div>
+
+            {/* Left: Original Image to Edit + Image Model */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                  <span>🖼️</span>
+                  <span>الصورة الأصلية للتعديل</span>
+                </h3>
+                {originalImage && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 rounded-lg text-xs"
+                    onClick={() => { setOriginalImage(null); setEditedImage(null); }}
+                  >
+                    <X className="h-3.5 w-3.5 ml-1" />
+                    تغيير
+                  </Button>
+                )}
+              </div>
+              {originalImage ? (
+                <div className="rounded-2xl overflow-hidden gradient-border">
+                  <img src={originalImage} alt="Original" className="w-full max-h-[400px] object-contain bg-card rounded-2xl" />
+                </div>
+              ) : (
+                <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+              )}
+              <ImageModelSelector value={imageModel} onChange={setImageModel} />
+            </div>
+          </div>
         </motion.section>
 
         {/* Options */}
@@ -147,9 +186,6 @@ const Index = () => {
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             ⚙️ خيارات البرومت
           </h2>
-          <div className="mb-4">
-            <ModelSelector value={model} onChange={setModel} />
-          </div>
           <PromptOptions options={options} onToggle={handleToggle} />
         </motion.section>
 
@@ -184,87 +220,36 @@ const Index = () => {
           <>
             <PromptResult prompt={prompt} />
 
-            {/* Image Generation Section */}
+            {/* Edited Result */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mt-10"
             >
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                🖼️ إنشاء وتعديل الصور
+                ✨ النتيجة بعد التعديل
               </h2>
-
-              {/* Image Model Selector */}
-              <div className="mb-6">
-                <ImageModelSelector value={imageModel} onChange={setImageModel} />
-              </div>
-
-              {/* 3 Image Containers */}
-              <div className="grid grid-cols-1 gap-4">
-                {/* Container 1: Reference Image */}
-                <ImageContainer
-                  label="الصورة المرجعية"
-                  emoji="📸"
-                  image={image}
-                />
-
-                {/* Container 2: Original Image to Edit (user uploads) */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass-card rounded-xl p-4 gradient-border"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                      <span>🖼️</span>
-                      <span>الصورة الأصلية للتعديل</span>
-                    </h3>
-                    {originalImage && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 rounded-lg text-xs"
-                        onClick={() => { setOriginalImage(null); setEditedImage(null); }}
-                      >
-                        <X className="h-3.5 w-3.5 ml-1" />
-                        تغيير
-                      </Button>
-                    )}
-                  </div>
-                  {originalImage ? (
-                    <div className="rounded-xl overflow-hidden bg-muted/20">
-                      <img src={originalImage} alt="Original" className="w-full max-h-[350px] object-contain rounded-xl" />
-                    </div>
-                  ) : (
-                    <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
-                  )}
-                </motion.div>
-
-                {/* Container 3: Edited Result */}
-                <div>
-                  <ImageContainer
-                    label="النتيجة بعد التعديل"
-                    emoji="✨"
-                    image={editedImage}
-                    loading={generatingImage}
-                    actionLabel="تطبيق البرومت على الصورة"
-                    actionIcon="generate"
-                    onAction={handleGenerateEditedImage}
-                    disabled={!originalImage || !prompt}
+              <ImageContainer
+                label="النتيجة بعد التعديل"
+                emoji="✨"
+                image={editedImage}
+                loading={generatingImage}
+                actionLabel="تطبيق البرومت على الصورة"
+                actionIcon="generate"
+                onAction={handleGenerateEditedImage}
+                disabled={!originalImage || !prompt}
+              />
+              {originalImage && (
+                <div className="mt-3">
+                  <Textarea
+                    value={editInstruction}
+                    onChange={(e) => setEditInstruction(e.target.value)}
+                    placeholder="تعليمات إضافية (اختياري)... مثال: اجعل الألوان أكثر دفئاً..."
+                    className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
+                    dir="rtl"
                   />
-                  {originalImage && (
-                    <div className="mt-3">
-                      <Textarea
-                        value={editInstruction}
-                        onChange={(e) => setEditInstruction(e.target.value)}
-                        placeholder="تعليمات إضافية (اختياري)... مثال: اجعل الألوان أكثر دفئاً..."
-                        className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
-                        dir="rtl"
-                      />
-                    </div>
-                  )}
                 </div>
-              </div>
+              )}
             </motion.section>
           </>
         )}
