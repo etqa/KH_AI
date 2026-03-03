@@ -6,13 +6,44 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getApiConfig(customApi: any) {
+  if (customApi && customApi.provider && customApi.apiKey) {
+    switch (customApi.provider) {
+      case "google":
+        return {
+          url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+      case "openai":
+        return {
+          url: "https://api.openai.com/v1/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+      case "custom":
+        return {
+          url: customApi.apiUrl || "https://api.openai.com/v1/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+    }
+  }
+  // Default: Lovable AI
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY is not configured");
+  }
+  return {
+    url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+    apiKey: LOVABLE_API_KEY,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { image, options, model } = await req.json();
+    const { image, options, model, customApi } = await req.json();
 
     if (!image) {
       return new Response(JSON.stringify({ error: "No image provided" }), {
@@ -21,25 +52,9 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
+    const apiConfig = getApiConfig(customApi);
 
     const enabledOptions = options as string[];
-    const optionsListAr: Record<string, string> = {
-      "Camera Angle": "زاوية الكاميرا",
-      "Camera Effects": "تأثيرات الكاميرا",
-      "Environment": "البيئة المحيطة",
-      "Colors": "الألوان",
-      "Materials & Textures": "الخامات والمواد",
-      "Lighting": "الإضاءة",
-      "Time of Day": "التوقيت",
-      "Art Style": "أسلوب الصورة",
-      "Mood & Emotion": "التعبيرات والمشاعر",
-      "Composition": "التكوين",
-    };
-
     const sectionsJson = enabledOptions.map(opt => `"${opt}": {"ar": "...", "en": "..."}`).join(", ");
 
     const systemPrompt = `You are an expert image prompt engineer. Analyze the provided image and generate a detailed, professional prompt.
@@ -60,7 +75,6 @@ The Arabic text should be professional and use proper Arabic photography/art ter
 The English text should be professional and include technical terms suitable for AI image generation prompts like Midjourney, DALL-E, or Stable Diffusion.
 Be extremely detailed and specific about what you observe in the image.`;
 
-    // Extract base64 data from data URL
     const base64Match = image.match(/^data:image\/([^;]+);base64,(.+)$/);
     if (!base64Match) {
       return new Response(JSON.stringify({ error: "Invalid image format" }), {
@@ -72,37 +86,34 @@ Be extremely detailed and specific about what you observe in the image.`;
     const mimeType = `image/${base64Match[1]}`;
     const base64Data = base64Match[2];
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: model || "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "image_url",
-                  image_url: {
-                    url: `data:${mimeType};base64,${base64Data}`,
-                  },
+    const response = await fetch(apiConfig.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiConfig.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: model || "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Data}`,
                 },
-                {
-                  type: "text",
-                  text: "Analyze this image and generate detailed prompts in both Arabic and English based on the specified options.",
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+              },
+              {
+                type: "text",
+                text: "Analyze this image and generate detailed prompts in both Arabic and English based on the specified options.",
+              },
+            ],
+          },
+        ],
+      }),
+    });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -118,8 +129,8 @@ Be extremely detailed and specific about what you observe in the image.`;
         );
       }
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("AI API error:", response.status, errorText);
+      throw new Error(`AI API error: ${response.status} - ${errorText}`);
     }
 
     const aiResponse = await response.json();
@@ -129,13 +140,10 @@ Be extremely detailed and specific about what you observe in the image.`;
       throw new Error("No content in AI response");
     }
 
-    // Parse JSON from AI response
     let result;
     try {
-      // Try direct parse first
       result = JSON.parse(content);
     } catch {
-      // Try extracting JSON from markdown code blocks
       const jsonMatch = content.match(/\{[\s\S]*"titleAr"[\s\S]*"sections"[\s\S]*\}/);
       if (jsonMatch) {
         result = JSON.parse(jsonMatch[0]);
