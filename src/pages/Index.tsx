@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
-import { Sparkles, Loader2, X } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState, useCallback, useRef } from "react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import ModelSelector from "@/components/ModelSelector";
 import ImageModelSelector from "@/components/ImageModelSelector";
 import ImageContainer from "@/components/ImageContainer";
 import SettingsDialog from "@/components/SettingsDialog";
+import ImageViewer from "@/components/ImageViewer";
 import { useSettings } from "@/hooks/useSettings";
 
 const Index = () => {
@@ -22,6 +23,7 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
+  const [optionsOpen, setOptionsOpen] = useState(true);
 
   // Image generation states
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -30,6 +32,13 @@ const Index = () => {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
+
+  // Image viewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerInitialIndex, setViewerInitialIndex] = useState(0);
+
+  // Drag state
+  const dragSourceRef = useRef<string | null>(null);
 
   const handleToggle = useCallback((id: string) => {
     setOptions((prev) =>
@@ -47,31 +56,71 @@ const Index = () => {
     return text.trim();
   };
 
+  // All viewable images for the viewer
+  const allImages = [
+    { src: image || "", label: "الصورة المرجعية" },
+    { src: originalImage || "", label: "الصورة الأصلية" },
+    { src: generatedImage || "", label: "النتيجة المولّدة" },
+    { src: reEditedImage || "", label: "النتيجة المعدّلة" },
+  ].filter((img) => img.src);
+
+  const openViewer = (imageSrc: string) => {
+    const idx = allImages.findIndex((img) => img.src === imageSrc);
+    setViewerInitialIndex(idx >= 0 ? idx : 0);
+    setViewerOpen(true);
+  };
+
+  // Container image map for drag-and-drop
+  const containerImageMap: Record<string, { get: () => string | null; set: (v: string | null) => void }> = {
+    reference: { get: () => image, set: setImage },
+    original: { get: () => originalImage, set: setOriginalImage },
+    generated: { get: () => generatedImage, set: setGeneratedImage },
+    reedited: { get: () => reEditedImage, set: setReEditedImage },
+  };
+
+  const handleDragStart = (containerId: string) => {
+    dragSourceRef.current = containerId;
+  };
+
+  const handleDrop = (targetId: string) => {
+    const sourceId = dragSourceRef.current;
+    if (!sourceId || sourceId === targetId) return;
+
+    const sourceEntry = containerImageMap[sourceId];
+    const targetEntry = containerImageMap[targetId];
+    if (!sourceEntry || !targetEntry) return;
+
+    const sourceImg = sourceEntry.get();
+    const targetImg = targetEntry.get();
+
+    // Swap images
+    targetEntry.set(sourceImg);
+    sourceEntry.set(targetImg);
+
+    toast.success("تم تبديل الصور ✅");
+    dragSourceRef.current = null;
+  };
+
   const handleGenerate = async () => {
     if (!image) {
       toast.error("الرجاء رفع صورة أولاً");
       return;
     }
-
     const enabledOptions = options.filter((o) => o.enabled).map((o) => o.labelEn);
     if (enabledOptions.length === 0) {
       toast.error("الرجاء تفعيل خيار واحد على الأقل");
       return;
     }
-
     setLoading(true);
     setPrompt(null);
     setGeneratedImage(null);
     setReEditedImage(null);
-
     try {
       const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("analyze-image", {
         body: { image, options: enabledOptions, model, customApi },
       });
-
       if (error) throw error;
-
       setPrompt(data as StructuredPrompt);
       toast.success("تم إنشاء البرومت بنجاح! ✨");
     } catch (err: any) {
@@ -84,7 +133,6 @@ const Index = () => {
 
   const handleGenerateEditedImage = async () => {
     if (!prompt || !originalImage) return;
-
     setGeneratingImage(true);
     try {
       const fullPrompt = buildFullPrompt(prompt, "en");
@@ -99,9 +147,7 @@ const Index = () => {
           customApi,
         },
       });
-
       if (error) throw error;
-
       setGeneratedImage(data.image);
       toast.success("تم توليد الصورة بنجاح! 🎨");
     } catch (err: any) {
@@ -114,7 +160,6 @@ const Index = () => {
 
   const handleReEditImage = async () => {
     if (!generatedImage || !editInstruction) return;
-
     setReEditingImage(true);
     try {
       const customApi = getActiveApiKey();
@@ -127,9 +172,7 @@ const Index = () => {
           customApi,
         },
       });
-
       if (error) throw error;
-
       setReEditedImage(data.image);
       toast.success("تم تعديل الصورة بنجاح! ✏️");
     } catch (err: any) {
@@ -206,7 +249,14 @@ const Index = () => {
               </div>
               {originalImage ? (
                 <div className="rounded-2xl overflow-hidden gradient-border">
-                  <img src={originalImage} alt="Original" className="w-full max-h-[400px] object-contain bg-card rounded-2xl" />
+                  <img
+                    src={originalImage}
+                    alt="Original"
+                    className="w-full max-h-[400px] object-contain bg-card rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => openViewer(originalImage)}
+                    draggable
+                    onDragStart={() => handleDragStart("original")}
+                  />
                 </div>
               ) : (
                 <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
@@ -216,17 +266,33 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* Options */}
+        {/* Collapsible Options */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-            ⚙️ خيارات البرومت
-          </h2>
-          <PromptOptions options={options} onToggle={handleToggle} />
+          <button
+            onClick={() => setOptionsOpen(!optionsOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
+          >
+            <span className="flex items-center gap-2">⚙️ خيارات البرومت</span>
+            {optionsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {optionsOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <PromptOptions options={options} onToggle={handleToggle} />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {/* Generate Button */}
@@ -270,7 +336,6 @@ const Index = () => {
                 🖼️ نتائج التوليد والتعديل
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Container 1: Generated from prompt + reference */}
                 <ImageContainer
                   label="النتيجة المولّدة"
                   emoji="🎨"
@@ -280,9 +345,13 @@ const Index = () => {
                   actionIcon="generate"
                   onAction={handleGenerateEditedImage}
                   disabled={!originalImage || !prompt}
+                  onImageClick={() => generatedImage && openViewer(generatedImage)}
+                  onImageReplace={setGeneratedImage}
+                  containerId="generated"
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
                 />
 
-                {/* Container 2: Re-edited result */}
                 <div className="flex flex-col gap-3">
                   <ImageContainer
                     label="النتيجة بعد التعديل"
@@ -293,6 +362,11 @@ const Index = () => {
                     actionIcon="edit"
                     onAction={handleReEditImage}
                     disabled={!generatedImage || !editInstruction}
+                    onImageClick={() => reEditedImage && openViewer(reEditedImage)}
+                    onImageReplace={setReEditedImage}
+                    containerId="reedited"
+                    onDragStart={handleDragStart}
+                    onDrop={handleDrop}
                   />
                   {generatedImage && (
                     <Textarea
@@ -314,6 +388,14 @@ const Index = () => {
           مجاني بالكامل • مدعوم بالذكاء الاصطناعي ✨
         </footer>
       </div>
+
+      {/* Full-screen Image Viewer */}
+      <ImageViewer
+        images={allImages}
+        initialIndex={viewerInitialIndex}
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+      />
     </div>
   );
 };
