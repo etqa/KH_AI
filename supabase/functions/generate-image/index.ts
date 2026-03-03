@@ -6,25 +6,50 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function getApiConfig(customApi: any) {
+  if (customApi && customApi.provider && customApi.apiKey) {
+    switch (customApi.provider) {
+      case "google":
+        return {
+          url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+      case "openai":
+        return {
+          url: "https://api.openai.com/v1/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+      case "custom":
+        return {
+          url: customApi.apiUrl || "https://api.openai.com/v1/chat/completions",
+          apiKey: customApi.apiKey,
+        };
+    }
+  }
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("LOVABLE_API_KEY is not configured");
+  }
+  return {
+    url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+    apiKey: LOVABLE_API_KEY,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { prompt, referenceImage, editImage, editInstruction, model, action } = await req.json();
+    const { prompt, referenceImage, editImage, editInstruction, model, action, customApi } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
+    const apiConfig = getApiConfig(customApi);
     const selectedModel = model || "google/gemini-2.5-flash-image";
 
     let messages: any[];
 
     if (action === "generate") {
-      // Generate image from prompt + reference image
       const content: any[] = [
         {
           type: "text",
@@ -39,7 +64,6 @@ serve(async (req) => {
       }
       messages = [{ role: "user", content }];
     } else if (action === "edit") {
-      // Edit an existing generated image
       if (!editImage) {
         return new Response(JSON.stringify({ error: "No image to edit" }), {
           status: 400,
@@ -70,21 +94,18 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages,
-          modalities: ["image", "text"],
-        }),
-      }
-    );
+    const response = await fetch(apiConfig.url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiConfig.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: selectedModel,
+        messages,
+        modalities: ["image", "text"],
+      }),
+    });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -100,8 +121,8 @@ serve(async (req) => {
         );
       }
       const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
+      console.error("AI API error:", response.status, errorText);
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const aiResponse = await response.json();

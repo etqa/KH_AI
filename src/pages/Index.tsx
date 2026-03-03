@@ -11,8 +11,11 @@ import PromptResult, { type StructuredPrompt } from "@/components/PromptResult";
 import ModelSelector from "@/components/ModelSelector";
 import ImageModelSelector from "@/components/ImageModelSelector";
 import ImageContainer from "@/components/ImageContainer";
+import SettingsDialog from "@/components/SettingsDialog";
+import { useSettings } from "@/hooks/useSettings";
 
 const Index = () => {
+  const { settings, updateSettings, getActiveApiKey } = useSettings();
   const [image, setImage] = useState<string | null>(null);
   const [options, setOptions] = useState<PromptOption[]>(defaultOptions);
   const [prompt, setPrompt] = useState<StructuredPrompt | null>(null);
@@ -62,8 +65,9 @@ const Index = () => {
     setReEditedImage(null);
 
     try {
+      const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("analyze-image", {
-        body: { image, options: enabledOptions, model },
+        body: { image, options: enabledOptions, model, customApi },
       });
 
       if (error) throw error;
@@ -84,6 +88,7 @@ const Index = () => {
     setGeneratingImage(true);
     try {
       const fullPrompt = buildFullPrompt(prompt, "en");
+      const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           action: "edit",
@@ -91,6 +96,7 @@ const Index = () => {
           editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}`,
           referenceImage: image,
           model: imageModel,
+          customApi,
         },
       });
 
@@ -111,12 +117,14 @@ const Index = () => {
 
     setReEditingImage(true);
     try {
+      const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           action: "edit",
           editImage: generatedImage,
           editInstruction,
           model: imageModel,
+          customApi,
         },
       });
 
@@ -148,9 +156,12 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl md:text-5xl font-black gradient-text mb-3">
-            وصف الصورة
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <h1 className="text-4xl md:text-5xl font-black gradient-text">
+              وصف الصورة
+            </h1>
+            <SettingsDialog settings={settings} onUpdate={updateSettings} />
+          </div>
           <p className="text-muted-foreground text-base md:text-lg">
             حلّل صورتك بالذكاء الاصطناعي واحصل على برومت احترافي جاهز للاستخدام
           </p>
