@@ -32,6 +32,7 @@ const Index = () => {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
+  const [promptLang, setPromptLang] = useState<"ar" | "en">("ar");
 
   // Image viewer state
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -135,7 +136,7 @@ const Index = () => {
     if (!prompt || !originalImage) return;
     setGeneratingImage(true);
     try {
-      const fullPrompt = buildFullPrompt(prompt, "en");
+      const fullPrompt = buildFullPrompt(prompt, promptLang);
       const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
@@ -324,7 +325,7 @@ const Index = () => {
         {/* Results */}
         {prompt && (
           <>
-            <PromptResult prompt={prompt} />
+            <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
 
             {/* Two result containers side by side */}
             <motion.section
