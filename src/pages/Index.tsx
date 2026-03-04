@@ -24,6 +24,7 @@ const Index = () => {
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
   const [optionsOpen, setOptionsOpen] = useState(true);
+  const [promptOpen, setPromptOpen] = useState(true);
 
   // Image generation states
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -74,7 +75,6 @@ const Index = () => {
   // Container image map for drag-and-drop
   const containerImageMap: Record<string, { get: () => string | null; set: (v: string | null) => void }> = {
     reference: { get: () => image, set: setImage },
-    original: { get: () => originalImage, set: setOriginalImage },
     generated: { get: () => generatedImage, set: setGeneratedImage },
     reedited: { get: () => reEditedImage, set: setReEditedImage },
   };
@@ -94,7 +94,6 @@ const Index = () => {
     const sourceImg = sourceEntry.get();
     const targetImg = targetEntry.get();
 
-    // Swap images
     targetEntry.set(sourceImg);
     sourceEntry.set(targetImg);
 
@@ -133,7 +132,10 @@ const Index = () => {
   };
 
   const handleGenerateEditedImage = async () => {
-    if (!prompt || !originalImage) return;
+    if (!prompt || !originalImage) {
+      toast.error("الرجاء رفع صورة أولاً في حاوية التوليد");
+      return;
+    }
     setGeneratingImage(true);
     try {
       const fullPrompt = buildFullPrompt(prompt, promptLang);
@@ -211,57 +213,21 @@ const Index = () => {
           </p>
         </motion.header>
 
-        {/* Two images side by side */}
+        {/* Reference Image Only */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Right: Reference Image + Prompt Model */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                <span>📸</span>
-                <span>الصورة المرجعية</span>
-              </h3>
-              <ImageUploader image={image} onImageChange={setImage} />
+          <div className="flex flex-col gap-3">
+            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+              <span>📸</span>
+              <span>الصورة المرجعية</span>
+            </h3>
+            <ImageUploader image={image} onImageChange={setImage} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <ModelSelector value={model} onChange={setModel} />
-            </div>
-
-            {/* Left: Original Image to Edit + Image Model */}
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                  <span>🖼️</span>
-                  <span>الصورة الأصلية للتعديل</span>
-                </h3>
-                {originalImage && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 rounded-lg text-xs"
-                    onClick={() => { setOriginalImage(null); setGeneratedImage(null); setReEditedImage(null); }}
-                  >
-                    <X className="h-3.5 w-3.5 ml-1" />
-                    تغيير
-                  </Button>
-                )}
-              </div>
-              {originalImage ? (
-                <div className="rounded-2xl overflow-hidden gradient-border">
-                  <img
-                    src={originalImage}
-                    alt="Original"
-                    className="w-full max-h-[400px] object-contain bg-card rounded-2xl cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => openViewer(originalImage)}
-                    draggable
-                    onDragStart={() => handleDragStart("original")}
-                  />
-                </div>
-              ) : (
-                <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
-              )}
               <ImageModelSelector value={imageModel} onChange={setImageModel} />
             </div>
           </div>
@@ -325,33 +291,91 @@ const Index = () => {
         {/* Results */}
         {prompt && (
           <>
-            <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
+            {/* Collapsible Prompt Result */}
+            <motion.section
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+            >
+              <button
+                onClick={() => setPromptOpen(!promptOpen)}
+                className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
+              >
+                <span className="flex items-center gap-2">📝 البرومت</span>
+                {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+              <AnimatePresence>
+                {promptOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.section>
 
-            {/* Two result containers side by side */}
+            {/* Generation Results */}
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-10"
+              className="mt-6"
             >
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 🖼️ نتائج التوليد والتعديل
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ImageContainer
-                  label="النتيجة المولّدة"
-                  emoji="🎨"
-                  image={generatedImage}
-                  loading={generatingImage}
-                  actionLabel="تطبيق البرومت على الصورة"
-                  actionIcon="generate"
-                  onAction={handleGenerateEditedImage}
-                  disabled={!originalImage || !prompt}
-                  onImageClick={() => generatedImage && openViewer(generatedImage)}
-                  onImageReplace={setGeneratedImage}
-                  containerId="generated"
-                  onDragStart={handleDragStart}
-                  onDrop={handleDrop}
-                />
+                {/* Generated: upload original here + generate */}
+                <div className="flex flex-col gap-3">
+                  {!generatedImage && !generatingImage && (
+                    <>
+                      <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                        <span>🖼️</span>
+                        <span>ارفع الصورة لتطبيق البرومت عليها</span>
+                      </h3>
+                      {originalImage ? (
+                        <div className="relative glass-card rounded-xl p-3 gradient-border">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
+                            onClick={() => { setOriginalImage(null); }}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                          <img
+                            src={originalImage}
+                            alt="Original"
+                            className="w-full max-h-[300px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => openViewer(originalImage)}
+                          />
+                        </div>
+                      ) : (
+                        <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                      )}
+                    </>
+                  )}
+                  <ImageContainer
+                    label="النتيجة المولّدة"
+                    emoji="🎨"
+                    image={generatedImage}
+                    loading={generatingImage}
+                    actionLabel="تطبيق البرومت على الصورة"
+                    actionIcon="generate"
+                    onAction={handleGenerateEditedImage}
+                    disabled={!originalImage || !prompt}
+                    onImageClick={() => generatedImage && openViewer(generatedImage)}
+                    onImageReplace={setGeneratedImage}
+                    containerId="generated"
+                    onDragStart={handleDragStart}
+                    onDrop={handleDrop}
+                    hideEmptyState={!generatedImage && !generatingImage}
+                  />
+                </div>
 
                 <div className="flex flex-col gap-3">
                   <ImageContainer

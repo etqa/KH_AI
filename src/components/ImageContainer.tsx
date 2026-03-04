@@ -17,6 +17,7 @@ interface ImageContainerProps {
   containerId?: string;
   onDragStart?: (containerId: string) => void;
   onDrop?: (containerId: string) => void;
+  hideEmptyState?: boolean;
 }
 
 const ImageContainer = ({
@@ -33,6 +34,7 @@ const ImageContainer = ({
   containerId,
   onDragStart,
   onDrop,
+  hideEmptyState,
 }: ImageContainerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,6 +88,24 @@ const ImageContainer = ({
     e.dataTransfer.setData("text/plain", containerId);
     onDragStart(containerId);
   };
+
+  if (hideEmptyState && !image && !loading) {
+    // Only show the action button
+    return onAction && actionLabel ? (
+      <Button
+        onClick={onAction}
+        disabled={disabled || loading}
+        className="w-full rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+      >
+        {actionIcon === "edit" ? (
+          <RefreshCw className="h-4 w-4 ml-2" />
+        ) : (
+          <Wand2 className="h-4 w-4 ml-2" />
+        )}
+        {actionLabel}
+      </Button>
+    ) : null;
+  }
 
   return (
     <motion.div
