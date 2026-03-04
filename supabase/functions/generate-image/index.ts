@@ -9,7 +9,7 @@ const corsHeaders = {
 const ALLOWED_PROVIDERS = ["google", "openai", "custom"];
 const ALLOWED_ACTIONS = ["generate", "edit"];
 const MAX_PROMPT_LENGTH = 5000;
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
