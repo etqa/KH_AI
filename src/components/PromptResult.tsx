@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { Copy, Check, Pencil } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
@@ -46,10 +47,17 @@ const sectionLabelsAr: Record<string, string> = {
 
 interface PromptResultProps {
   prompt: StructuredPrompt;
+  onPromptChange?: (updated: StructuredPrompt) => void;
+  onActiveLangChange?: (lang: "ar" | "en") => void;
 }
 
-const PromptResult = ({ prompt }: PromptResultProps) => {
+const PromptResult = ({ prompt, onPromptChange, onActiveLangChange }: PromptResultProps) => {
   const [copiedLang, setCopiedLang] = useState<string | null>(null);
+  const [activeLang, setActiveLang] = useState<"ar" | "en">("ar");
+
+  useEffect(() => {
+    onActiveLangChange?.(activeLang);
+  }, [activeLang, onActiveLangChange]);
 
   const buildFullText = (lang: "ar" | "en") => {
     const title = lang === "ar" ? prompt.titleAr : prompt.titleEn;
@@ -69,13 +77,35 @@ const PromptResult = ({ prompt }: PromptResultProps) => {
     setTimeout(() => setCopiedLang(null), 2000);
   };
 
+  const updateField = useCallback((field: string, value: string) => {
+    if (!onPromptChange) return;
+    const updated = { ...prompt };
+    if (field === "titleAr") updated.titleAr = value;
+    else if (field === "titleEn") updated.titleEn = value;
+    else if (field === "overviewAr") updated.overviewAr = value;
+    else if (field === "overviewEn") updated.overviewEn = value;
+    onPromptChange(updated);
+  }, [prompt, onPromptChange]);
+
+  const updateSection = useCallback((key: string, lang: "ar" | "en", value: string) => {
+    if (!onPromptChange) return;
+    const updated = {
+      ...prompt,
+      sections: {
+        ...prompt.sections,
+        [key]: { ...prompt.sections[key], [lang]: value },
+      },
+    };
+    onPromptChange(updated);
+  }, [prompt, onPromptChange]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="w-full"
     >
-      <Tabs defaultValue="ar" className="w-full" dir="rtl">
+      <Tabs defaultValue="ar" className="w-full" dir="rtl" onValueChange={(v) => setActiveLang(v as "ar" | "en")}>
         <TabsList className="w-full bg-muted/30 rounded-xl">
           <TabsTrigger value="ar" className="flex-1 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             🇸🇦 عربي
@@ -89,24 +119,30 @@ const PromptResult = ({ prompt }: PromptResultProps) => {
           <TabsContent key={lang} value={lang} className="mt-4">
             <div className="glass-card rounded-xl p-5 gradient-border space-y-4">
               {/* Header with copy */}
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-foreground text-lg">
-                  {lang === "ar" ? prompt.titleAr : prompt.titleEn}
-                </h3>
+              <div className="flex items-center justify-between gap-2">
+                <input
+                  value={lang === "ar" ? prompt.titleAr : prompt.titleEn}
+                  onChange={(e) => updateField(lang === "ar" ? "titleAr" : "titleEn", e.target.value)}
+                  className="font-bold text-foreground text-lg bg-transparent border-none outline-none flex-1 focus:ring-1 focus:ring-primary/30 rounded px-1"
+                  dir={lang === "ar" ? "rtl" : "ltr"}
+                />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleCopy(lang)}
-                  className="h-8 w-8"
+                  className="h-8 w-8 shrink-0"
                 >
                   {copiedLang === lang ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
 
               {/* Overview */}
-              <p className="text-muted-foreground leading-relaxed text-sm" dir={lang === "ar" ? "rtl" : "ltr"}>
-                {lang === "ar" ? prompt.overviewAr : prompt.overviewEn}
-              </p>
+              <Textarea
+                value={lang === "ar" ? prompt.overviewAr : prompt.overviewEn}
+                onChange={(e) => updateField(lang === "ar" ? "overviewAr" : "overviewEn", e.target.value)}
+                className="text-muted-foreground leading-relaxed text-sm bg-transparent border-border/20 focus:border-primary/30 min-h-[60px] resize-none"
+                dir={lang === "ar" ? "rtl" : "ltr"}
+              />
 
               {/* Sections */}
               {Object.entries(prompt.sections).map(([key, section]) => (
@@ -115,9 +151,12 @@ const PromptResult = ({ prompt }: PromptResultProps) => {
                     <span>{sectionEmojis[key] || "📌"}</span>
                     <span>{lang === "ar" ? (sectionLabelsAr[key] || key) : key}</span>
                   </h4>
-                  <p className="text-muted-foreground leading-relaxed text-sm whitespace-pre-wrap" dir={lang === "ar" ? "rtl" : "ltr"}>
-                    {section[lang]}
-                  </p>
+                  <Textarea
+                    value={section[lang]}
+                    onChange={(e) => updateSection(key, lang, e.target.value)}
+                    className="text-muted-foreground leading-relaxed text-sm bg-transparent border-border/20 focus:border-primary/30 min-h-[50px] resize-none whitespace-pre-wrap"
+                    dir={lang === "ar" ? "rtl" : "ltr"}
+                  />
                 </div>
               ))}
             </div>
