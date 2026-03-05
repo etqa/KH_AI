@@ -53,6 +53,70 @@ function validateImageData(img: any): boolean {
   return typeof img === "string" && img.length > 0 && img.length <= MAX_IMAGE_SIZE;
 }
 
+function buildEditPromptWithReference(instructionText: string): string {
+  return "CRITICAL INSTRUCTIONS - READ CAREFULLY:\n\n" +
+    "I am providing TWO images below:\n" +
+    "- IMAGE 1 (FIRST): The TARGET image - this is the ONLY image you must edit.\n" +
+    "- IMAGE 2 (SECOND): A style/mood reference ONLY - do NOT copy its content, subject, composition, or structure.\n\n" +
+    "RULES:\n" +
+    "1. PRESERVE the TARGET image's exact subject, composition, proportions, perspective, and all structural details.\n" +
+    "2. The target image's content must remain IDENTICAL - same objects, same layout, same scale.\n" +
+    "3. From the reference image, ONLY extract: color palette, lighting mood, atmosphere, artistic style, texture treatment.\n" +
+    "4. Apply ONLY the style/mood aspects to the target image while keeping everything else unchanged.\n" +
+    "5. The output image MUST look like the TARGET image with a style filter applied, NOT like the reference image.\n" +
+    "6. Maintain the same aspect ratio and level of detail as the target image.\n\n" +
+    "Style instructions to apply:\n" + instructionText.substring(0, MAX_PROMPT_LENGTH);
+}
+
+function buildMessages(action: string, body: any, referenceImage: string | undefined, editImage: string | undefined, editInstruction: string | undefined, prompt: string | undefined): any[] {
+  if (action === "generate") {
+    const content: any[] = [
+      {
+        type: "text",
+        text: "Based on the following detailed prompt, generate a new image that captures all the described elements. Use the reference image as visual guidance for style and composition.\n\nPrompt:\n" + (prompt || "").substring(0, MAX_PROMPT_LENGTH),
+      },
+    ];
+    if (referenceImage) {
+      content.push({ type: "image_url", image_url: { url: referenceImage } });
+    }
+    return [{ role: "user", content }];
+  }
+
+  if (action === "edit") {
+    const hasReference = referenceImage && validateImageData(referenceImage);
+    const instructionText = editInstruction || "Improve and enhance this image while keeping the same composition and style.";
+    const editContent: any[] = [];
+
+    if (hasReference) {
+      editContent.push(
+        { type: "text", text: buildEditPromptWithReference(instructionText) },
+        { type: "image_url", image_url: { url: editImage } },
+        { type: "image_url", image_url: { url: referenceImage } }
+      );
+    } else {
+      editContent.push(
+        { type: "text", text: "Edit this image while preserving its exact composition, subject, proportions, and structural details. Only apply the following changes:\n\n" + instructionText.substring(0, MAX_PROMPT_LENGTH) },
+        { type: "image_url", image_url: { url: editImage } }
+      );
+    }
+    return [{ role: "user", content: editContent }];
+  }
+
+  if (action === "upscale") {
+    const scale = body.scale || 2;
+    const upscaleContent: any[] = [
+      {
+        type: "text",
+        text: "Upscale this image by " + scale + "x. Enhance the resolution and details significantly while preserving the EXACT same content, composition, colors, lighting, and style. Add fine details, sharpen textures, and improve clarity. The output must be a higher resolution version of the EXACT same image - do not change, add, or remove anything. Make it ultra high quality and sharp.",
+      },
+      { type: "image_url", image_url: { url: editImage } },
+    ];
+    return [{ role: "user", content: upscaleContent }];
+  }
+
+  return [];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -70,30 +134,33 @@ serve(async (req) => {
 
     const { prompt, referenceImage, editImage, editInstruction, model, action, customApi } = body;
 
-    // Validate action
     if (!action || !ALLOWED_ACTIONS.includes(action)) {
       return new Response(JSON.stringify({ error: "إجراء غير صالح" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate prompt
     if (action === "generate" && prompt && (typeof prompt !== "string" || prompt.length > MAX_PROMPT_LENGTH)) {
       return new Response(JSON.stringify({ error: "النص طويل جداً" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate edit instruction
     if (action === "edit" && editInstruction && (typeof editInstruction !== "string" || editInstruction.length > MAX_PROMPT_LENGTH)) {
       return new Response(JSON.stringify({ error: "تعليمات التعديل طويلة جداً" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate images
     if (referenceImage && !validateImageData(referenceImage)) {
       return new Response(JSON.stringify({ error: "الصورة المرجعية غير صالحة أو كبيرة جداً" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if ((action === "edit" || action === "upscale") && (!editImage || !validateImageData(editImage))) {
+      const errMsg = action === "edit" ? "لا توجد صورة للتعديل" : "لا توجد صورة لتكبيرها";
+      return new Response(JSON.stringify({ error: errMsg }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -101,85 +168,12 @@ serve(async (req) => {
     const apiConfig = getApiConfig(customApi);
     const selectedModel = (typeof model === "string" && model.length < 100) ? model : "google/gemini-2.5-flash-image";
 
-    let messages: any[];
-
-    if (action === "generate") {
-      const content: any[] = [
-        {
-          type: "text",
-          text: `Based on the following detailed prompt, generate a new image that captures all the described elements. Use the reference image as visual guidance for style and composition.\n\nPrompt:\n${(prompt || "").substring(0, MAX_PROMPT_LENGTH)}`,
-        },
-      ];
-      if (referenceImage) {
-        content.push({ type: "image_url", image_url: { url: referenceImage } });
-      }
-      messages = [{ role: "user", content }];
-    } else if (action === "edit") {
-      if (!editImage || !validateImageData(editImage)) {
-        return new Response(JSON.stringify({ error: "لا توجد صورة للتعديل" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const hasReference = referenceImage && validateImageData(referenceImage);
-      const instructionText = editInstruction || "Improve and enhance this image while keeping the same composition and style.";
-      
-      const editContent: any[] = [];
-      
-      if (hasReference) {
-        editContent.push(
-          {
-            type: "text",
-            text: `CRITICAL INSTRUCTIONS - READ CAREFULLY:
-
-I am providing TWO images below:
-- IMAGE 1 (FIRST): The TARGET image - this is the ONLY image you must edit.
-- IMAGE 2 (SECOND): A style/mood reference ONLY - do NOT copy its content, subject, composition, or structure.
-
-RULES:
-1. PRESERVE the TARGET image's exact subject, composition, proportions, perspective, and all structural details.
-2. The target image's content must remain IDENTICAL - same objects, same layout, same scale.
-3. From the reference image, ONLY extract: color palette, lighting mood, atmosphere, artistic style, texture treatment.
-4. Apply ONLY the style/mood aspects to the target image while keeping everything else unchanged.
-5. The output image MUST look like the TARGET image with a style filter applied, NOT like the reference image.
-6. Maintain the same aspect ratio and level of detail as the target image.
-
-Style instructions to apply:\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
-          },
-          { type: "image_url", image_url: { url: editImage } },
-          { type: "image_url", image_url: { url: referenceImage } }
-        );
-      } else {
-        editContent.push(
-          {
-            type: "text",
-            text: `Edit this image while preserving its exact composition, subject, proportions, and structural details. Only apply the following changes:\n\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
-          },
-          { type: "image_url", image_url: { url: editImage } }
-        );
-      }
-      messages = [{ role: "user", content: editContent }];
-    } else if (action === "upscale") {
-      // Upscale action
-      if (!editImage || !validateImageData(editImage)) {
-        return new Response(JSON.stringify({ error: "لا توجد صورة لتكبيرها" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const scale = body.scale || 2;
-      const upscaleContent: any[] = [
-        {
-          type: "text",
-          text: `Upscale this image by ${scale}x. Enhance the resolution and details significantly while preserving the EXACT same content, composition, colors, lighting, and style. Add fine details, sharpen textures, and improve clarity. The output must be a higher resolution version of the EXACT same image - do not change, add, or remove anything. Make it ultra high quality and sharp.`,
-        },
-        { type: "image_url", image_url: { url: editImage } },
-      ];
-      messages = [{ role: "user", content: upscaleContent }];
-    }
+    const messages = buildMessages(action, body, referenceImage, editImage, editInstruction, prompt);
 
     const response = await fetch(apiConfig.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiConfig.apiKey}`,
+        Authorization: "Bearer " + apiConfig.apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
