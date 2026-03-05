@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Sparkles, Loader2, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -328,54 +328,59 @@ const Index = () => {
               <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
                 🖼️ نتائج التوليد والتعديل
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Generated: upload original here + generate */}
-                <div className="flex flex-col gap-3">
-                  {!generatedImage && !generatingImage && (
-                    <>
-                      <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                        <span>🖼️</span>
-                        <span>ارفع الصورة لتطبيق البرومت عليها</span>
-                      </h3>
-                      {originalImage ? (
-                        <div className="relative glass-card rounded-xl p-3 gradient-border">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
-                            onClick={() => { setOriginalImage(null); }}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                          <img
-                            src={originalImage}
-                            alt="Original"
-                            className="w-full max-h-[300px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => openViewer(originalImage)}
-                          />
-                        </div>
+              {/* Upload original image */}
+              <div className="mb-4">
+                <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
+                  <span>🖼️</span>
+                  <span>ارفع الصورة لتطبيق البرومت عليها</span>
+                </h3>
+                {originalImage ? (
+                  <div className="relative glass-card rounded-xl p-3 gradient-border">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
+                      onClick={() => { setOriginalImage(null); }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                    <img
+                      src={originalImage}
+                      alt="Original"
+                      className="w-full max-h-[250px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => openViewer(originalImage)}
+                    />
+                    <Button
+                      onClick={handleGenerateEditedImage}
+                      disabled={!prompt || generatingImage}
+                      className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
                       ) : (
-                        <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                        <Wand2 className="h-4 w-4 ml-2" />
                       )}
-                    </>
-                  )}
-                  <ImageContainer
-                    label="النتيجة المولّدة"
-                    emoji="🎨"
-                    image={generatedImage}
-                    loading={generatingImage}
-                    actionLabel="تطبيق البرومت على الصورة"
-                    actionIcon="generate"
-                    onAction={handleGenerateEditedImage}
-                    disabled={!originalImage || !prompt}
-                    onImageClick={() => generatedImage && openViewer(generatedImage)}
-                    onImageReplace={setGeneratedImage}
-                    containerId="generated"
-                    onDragStart={handleDragStart}
-                    onDrop={handleDrop}
-                    hideEmptyState={!generatedImage && !generatingImage}
-                  />
-                </div>
+                      تطبيق البرومت على الصورة
+                    </Button>
+                  </div>
+                ) : (
+                  <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                )}
+              </div>
+
+              {/* Results grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ImageContainer
+                  label="النتيجة المولّدة"
+                  emoji="🎨"
+                  image={generatedImage}
+                  loading={generatingImage}
+                  onImageClick={() => generatedImage && openViewer(generatedImage)}
+                  onImageReplace={setGeneratedImage}
+                  containerId="generated"
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
+                />
 
                 <div className="flex flex-col gap-3">
                   <ImageContainer
