@@ -114,7 +114,7 @@ serve(async (req) => {
         content.push({ type: "image_url", image_url: { url: referenceImage } });
       }
       messages = [{ role: "user", content }];
-    } else {
+    } else if (action === "edit") {
       if (!editImage || !validateImageData(editImage)) {
         return new Response(JSON.stringify({ error: "لا توجد صورة للتعديل" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
