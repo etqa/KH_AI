@@ -120,15 +120,28 @@ serve(async (req) => {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const editContent: any[] = [
-        {
-          type: "text",
-          text: (editInstruction || "Improve and enhance this image while keeping the same composition and style.").substring(0, MAX_PROMPT_LENGTH),
-        },
-        { type: "image_url", image_url: { url: editImage } },
-      ];
-      if (referenceImage) {
-        editContent.push({ type: "image_url", image_url: { url: referenceImage } });
+      const hasReference = referenceImage && validateImageData(referenceImage);
+      const instructionText = editInstruction || "Improve and enhance this image while keeping the same composition and style.";
+      
+      const editContent: any[] = [];
+      
+      if (hasReference) {
+        editContent.push(
+          {
+            type: "text",
+            text: `I'm providing TWO images:\n1. FIRST IMAGE: This is the TARGET image that you MUST edit and transform.\n2. SECOND IMAGE: This is ONLY a style reference - do NOT reproduce it.\n\nYour task: Apply the following instructions to the FIRST (target) image ONLY. Use the second image only as a visual style guide.\n\nInstructions:\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
+          },
+          { type: "image_url", image_url: { url: editImage } },
+          { type: "image_url", image_url: { url: referenceImage } }
+        );
+      } else {
+        editContent.push(
+          {
+            type: "text",
+            text: instructionText.substring(0, MAX_PROMPT_LENGTH),
+          },
+          { type: "image_url", image_url: { url: editImage } }
+        );
       }
       messages = [{ role: "user", content: editContent }];
     }
