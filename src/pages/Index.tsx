@@ -13,6 +13,7 @@ import ImageModelSelector from "@/components/ImageModelSelector";
 import ImageContainer from "@/components/ImageContainer";
 import SettingsDialog from "@/components/SettingsDialog";
 import ImageViewer from "@/components/ImageViewer";
+import UpscaleSection from "@/components/UpscaleSection";
 import { useSettings } from "@/hooks/useSettings";
 
 const Index = () => {
@@ -412,6 +413,13 @@ const Index = () => {
             </motion.section>
           </>
         )}
+
+        {/* Upscale Section */}
+        <UpscaleSection
+          imageModel={imageModel}
+          getActiveApiKey={getActiveApiKey}
+          onImageClick={openViewer}
+        />
 
         {/* Footer */}
         <footer className="mt-12 text-center text-xs text-muted-foreground">

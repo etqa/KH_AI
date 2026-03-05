@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const ALLOWED_PROVIDERS = ["google", "openai", "custom"];
-const ALLOWED_ACTIONS = ["generate", "edit"];
+const ALLOWED_ACTIONS = ["generate", "edit", "upscale"];
 const MAX_PROMPT_LENGTH = 5000;
 const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
@@ -129,7 +129,21 @@ serve(async (req) => {
         editContent.push(
           {
             type: "text",
-            text: `I'm providing TWO images:\n1. FIRST IMAGE: This is the TARGET image that you MUST edit and transform.\n2. SECOND IMAGE: This is ONLY a style reference - do NOT reproduce it.\n\nYour task: Apply the following instructions to the FIRST (target) image ONLY. Use the second image only as a visual style guide.\n\nInstructions:\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
+            text: `CRITICAL INSTRUCTIONS - READ CAREFULLY:
+
+I am providing TWO images below:
+- IMAGE 1 (FIRST): The TARGET image - this is the ONLY image you must edit.
+- IMAGE 2 (SECOND): A style/mood reference ONLY - do NOT copy its content, subject, composition, or structure.
+
+RULES:
+1. PRESERVE the TARGET image's exact subject, composition, proportions, perspective, and all structural details.
+2. The target image's content must remain IDENTICAL - same objects, same layout, same scale.
+3. From the reference image, ONLY extract: color palette, lighting mood, atmosphere, artistic style, texture treatment.
+4. Apply ONLY the style/mood aspects to the target image while keeping everything else unchanged.
+5. The output image MUST look like the TARGET image with a style filter applied, NOT like the reference image.
+6. Maintain the same aspect ratio and level of detail as the target image.
+
+Style instructions to apply:\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
           },
           { type: "image_url", image_url: { url: editImage } },
           { type: "image_url", image_url: { url: referenceImage } }
@@ -138,12 +152,28 @@ serve(async (req) => {
         editContent.push(
           {
             type: "text",
-            text: instructionText.substring(0, MAX_PROMPT_LENGTH),
+            text: `Edit this image while preserving its exact composition, subject, proportions, and structural details. Only apply the following changes:\n\n${instructionText.substring(0, MAX_PROMPT_LENGTH)}`,
           },
           { type: "image_url", image_url: { url: editImage } }
         );
       }
       messages = [{ role: "user", content: editContent }];
+    } else if (action === "upscale") {
+      // Upscale action
+      if (!editImage || !validateImageData(editImage)) {
+        return new Response(JSON.stringify({ error: "لا توجد صورة لتكبيرها" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const scale = body.scale || 2;
+      const upscaleContent: any[] = [
+        {
+          type: "text",
+          text: `Upscale this image by ${scale}x. Enhance the resolution and details significantly while preserving the EXACT same content, composition, colors, lighting, and style. Add fine details, sharpen textures, and improve clarity. The output must be a higher resolution version of the EXACT same image - do not change, add, or remove anything. Make it ultra high quality and sharp.`,
+        },
+        { type: "image_url", image_url: { url: editImage } },
+      ];
+      messages = [{ role: "user", content: upscaleContent }];
     }
 
     const response = await fetch(apiConfig.url, {
