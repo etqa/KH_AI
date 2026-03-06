@@ -204,7 +204,9 @@ const Index = () => {
         },
       });
       if (error) throw error;
-      setGeneratedImage(data.image);
+      // Crop generated image to match original aspect ratio
+      const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
+      setGeneratedImage(croppedImage);
       toast.success("تم توليد الصورة بنجاح! 🎨");
     } catch (err: any) {
       console.error("Error generating image:", err);
