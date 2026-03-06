@@ -49,6 +49,15 @@ const Index = () => {
     );
   }, []);
 
+  const getImageDimensions = (imgSrc: string): Promise<{width: number; height: number}> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = imgSrc;
+    });
+  };
+
   const buildFullPrompt = (p: StructuredPrompt, lang: "en" | "ar") => {
     const title = lang === "ar" ? p.titleAr : p.titleEn;
     const overview = lang === "ar" ? p.overviewAr : p.overviewEn;
@@ -141,11 +150,18 @@ const Index = () => {
     try {
       const fullPrompt = buildFullPrompt(prompt, promptLang);
       const customApi = getActiveApiKey();
+      
+      // Get original image dimensions to preserve aspect ratio
+      const imgDims = await getImageDimensions(originalImage);
+      const aspectNote = imgDims 
+        ? `\n\nCRITICAL: The output image MUST have the EXACT same aspect ratio as the target image (${imgDims.width}x${imgDims.height}, ratio ${(imgDims.width/imgDims.height).toFixed(3)}). Do NOT use the reference image's aspect ratio or dimensions.`
+        : "";
+      
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           action: "edit",
           editImage: originalImage,
-          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}`,
+          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}${aspectNote}`,
           referenceImage: image,
           model: imageModel,
           customApi,
