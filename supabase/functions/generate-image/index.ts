@@ -54,19 +54,31 @@ function validateImageData(img: any): boolean {
 }
 
 function buildEditPromptWithReference(instructionText: string): string {
-  return "CRITICAL INSTRUCTIONS - READ CAREFULLY:\n\n" +
-    "I am providing TWO images below:\n" +
-    "- IMAGE 1 (FIRST): The TARGET image - this is the ONLY image you must edit.\n" +
-    "- IMAGE 2 (SECOND): A style/mood reference ONLY - do NOT copy its content, subject, composition, or structure.\n\n" +
-    "RULES:\n" +
-    "1. PRESERVE the TARGET image's exact subject, composition, proportions, perspective, and all structural details.\n" +
-    "2. The target image's content must remain IDENTICAL - same objects, same layout, same scale.\n" +
-    "3. From the reference image, ONLY extract: color palette, lighting mood, atmosphere, artistic style, texture treatment.\n" +
-    "4. Apply ONLY the style/mood aspects to the target image while keeping everything else unchanged.\n" +
-    "5. The output image MUST look like the TARGET image with a style filter applied, NOT like the reference image.\n" +
-    "6. CRITICAL: The output MUST have the EXACT same aspect ratio and dimensions as the TARGET image (IMAGE 1). IGNORE the reference image's aspect ratio completely.\n" +
-    "7. Maintain the same level of detail as the target image.\n\n" +
-    "Style instructions to apply:\n" + instructionText.substring(0, MAX_PROMPT_LENGTH);
+  return "You are an image editing tool. You will receive TWO images:\n" +
+    "- IMAGE 1 (FIRST): The TARGET image you MUST edit in-place.\n" +
+    "- IMAGE 2 (SECOND): A style/mood reference ONLY.\n\n" +
+    "YOUR #1 PRIORITY: The output MUST be a pixel-accurate recreation of IMAGE 1 (the TARGET) with ONLY style changes applied.\n\n" +
+    "ABSOLUTE RULES (NEVER BREAK THESE):\n" +
+    "1. Every object in the TARGET image must appear at the EXACT SAME position, size, angle, and distance from camera. Do NOT move, resize, rotate, or reposition ANY element.\n" +
+    "2. The building/subject must occupy the EXACT same pixels in the frame. If a building is in the center-right at 60% height, it MUST remain there.\n" +
+    "3. ALL structural details must be preserved: number of windows, architectural features, text/signs, vehicles, people, trees - everything stays IDENTICAL.\n" +
+    "4. The perspective, camera angle, lens distortion, and field of view must be EXACTLY the same as the TARGET.\n" +
+    "5. The foreground, midground, and background layout must be pixel-identical to the TARGET.\n" +
+    "6. The output dimensions and aspect ratio MUST match the TARGET image exactly.\n\n" +
+    "WHAT YOU CAN CHANGE (from the reference image style ONLY):\n" +
+    "- Sky/weather/atmosphere (e.g., cloudy sky, golden hour lighting)\n" +
+    "- Color grading and tone\n" +
+    "- Lighting direction and mood\n" +
+    "- Surface textures and material rendering style\n\n" +
+    "WHAT YOU MUST NEVER CHANGE:\n" +
+    "- Position of ANY object\n" +
+    "- Size or scale of ANY element\n" +
+    "- Camera angle or perspective\n" +
+    "- Composition or framing\n" +
+    "- Architectural details, text, signs\n" +
+    "- Number or arrangement of objects (cars, people, trees)\n\n" +
+    "Think of this as applying an Instagram filter to the TARGET image - the content stays 100% identical, only the mood/style changes.\n\n" +
+    "Additional style instructions:\n" + instructionText.substring(0, MAX_PROMPT_LENGTH);
 }
 
 function buildMessages(action: string, body: any, referenceImage: string | undefined, editImage: string | undefined, editInstruction: string | undefined, prompt: string | undefined): any[] {
