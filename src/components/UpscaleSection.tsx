@@ -4,7 +4,7 @@ import { Loader2, ZoomIn, Upload, Download, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
-
+import { supabase } from "@/integrations/supabase/client";
 
 interface UpscaleSectionProps {
   imageModel: string;
@@ -47,70 +47,12 @@ const UpscaleSection = ({
   const handleDropEvent = (e: React.DragEvent) => {
     e.preventDefault();
     e.currentTarget.classList.remove("ring-2", "ring-primary/50");
-    
-    // File drop
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith("image/")) {
       const reader = new FileReader();
       reader.onload = (ev) => setSourceImage(ev.target?.result as string);
       reader.readAsDataURL(file);
-      return;
     }
-
-    // Check for image data from other containers
-    const imageData = e.dataTransfer.getData("text/plain");
-    if (imageData) {
-      // This will be handled by the parent for inter-container drops
-    }
-  };
-
-  const upscaleWithCanvas = (imgSrc: string, scaleFactor: number): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const newWidth = img.naturalWidth * scaleFactor;
-        const newHeight = img.naturalHeight * scaleFactor;
-
-        const canvas = document.createElement("canvas");
-        canvas.width = newWidth;
-        canvas.height = newHeight;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) { reject(new Error("Canvas not supported")); return; }
-
-        // High-quality upscale
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
-        // Sharpening pass using unsharp mask technique
-        const sharpenCanvas = document.createElement("canvas");
-        sharpenCanvas.width = newWidth;
-        sharpenCanvas.height = newHeight;
-        const sCtx = sharpenCanvas.getContext("2d");
-        if (sCtx) {
-          // Draw blurred version
-          sCtx.filter = "blur(1px)";
-          sCtx.drawImage(canvas, 0, 0);
-          sCtx.filter = "none";
-
-          // Apply unsharp mask
-          const original = ctx.getImageData(0, 0, newWidth, newHeight);
-          const blurred = sCtx.getImageData(0, 0, newWidth, newHeight);
-          const amount = 0.5;
-          for (let i = 0; i < original.data.length; i += 4) {
-            original.data[i] = Math.min(255, Math.max(0, original.data[i] + amount * (original.data[i] - blurred.data[i])));
-            original.data[i + 1] = Math.min(255, Math.max(0, original.data[i + 1] + amount * (original.data[i + 1] - blurred.data[i + 1])));
-            original.data[i + 2] = Math.min(255, Math.max(0, original.data[i + 2] + amount * (original.data[i + 2] - blurred.data[i + 2])));
-          }
-          ctx.putImageData(original, 0, 0);
-        }
-
-        resolve(canvas.toDataURL("image/png"));
-      };
-      img.onerror = () => reject(new Error("فشل تحميل الصورة"));
-      img.src = imgSrc;
-    });
   };
 
   const handleUpscale = async () => {
@@ -121,8 +63,19 @@ const UpscaleSection = ({
     setLoading(true);
     setUpscaledImage(null);
     try {
-      const result = await upscaleWithCanvas(sourceImage, scale);
-      setUpscaledImage(result);
+      const customApi = getActiveApiKey();
+      const { data, error } = await supabase.functions.invoke("generate-image", {
+        body: {
+          action: "upscale",
+          editImage: sourceImage,
+          scale,
+          model: imageModel,
+          customApi,
+        },
+      });
+      if (error) throw error;
+      if (!data?.image) throw new Error("لم يتم توليد صورة");
+      setUpscaledImage(data.image);
       toast.success(`تم تكبير الصورة ${scale}X بنجاح! 🔍`);
     } catch (err: any) {
       console.error("Error upscaling:", err);
@@ -204,7 +157,7 @@ const UpscaleSection = ({
               value={[scale]}
               onValueChange={(v) => setScale(v[0])}
               min={2}
-              max={6}
+              max={4}
               step={1}
               className="w-full"
             />
@@ -212,8 +165,6 @@ const UpscaleSection = ({
               <span>2X</span>
               <span>3X</span>
               <span>4X</span>
-              <span>5X</span>
-              <span>6X</span>
             </div>
           </div>
 
@@ -254,7 +205,7 @@ const UpscaleSection = ({
             {loading ? (
               <div className="flex flex-col items-center gap-3 py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">جارِ التكبير {scale}X...</p>
+                <p className="text-xs text-muted-foreground">جارِ التكبير بالذكاء الاصطناعي {scale}X...</p>
               </div>
             ) : upscaledImage ? (
               <img
