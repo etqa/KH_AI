@@ -58,6 +58,42 @@ const Index = () => {
     });
   };
 
+  const cropToAspectRatio = (imgSrc: string, targetWidth: number, targetHeight: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const targetRatio = targetWidth / targetHeight;
+        const srcRatio = img.naturalWidth / img.naturalHeight;
+        
+        let cropX = 0, cropY = 0, cropW = img.naturalWidth, cropH = img.naturalHeight;
+        
+        if (Math.abs(srcRatio - targetRatio) < 0.01) {
+          resolve(imgSrc);
+          return;
+        }
+        
+        if (srcRatio > targetRatio) {
+          cropW = Math.round(img.naturalHeight * targetRatio);
+          cropX = Math.round((img.naturalWidth - cropW) / 2);
+        } else {
+          cropH = Math.round(img.naturalWidth / targetRatio);
+          cropY = Math.round((img.naturalHeight - cropH) / 2);
+        }
+        
+        const canvas = document.createElement("canvas");
+        canvas.width = cropW;
+        canvas.height = cropH;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas error")); return; }
+        
+        ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = imgSrc;
+    });
+  };
+
   const buildFullPrompt = (p: StructuredPrompt, lang: "en" | "ar") => {
     const title = lang === "ar" ? p.titleAr : p.titleEn;
     const overview = lang === "ar" ? p.overviewAr : p.overviewEn;
@@ -168,7 +204,9 @@ const Index = () => {
         },
       });
       if (error) throw error;
-      setGeneratedImage(data.image);
+      // Crop generated image to match original aspect ratio
+      const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
+      setGeneratedImage(croppedImage);
       toast.success("تم توليد الصورة بنجاح! 🎨");
     } catch (err: any) {
       console.error("Error generating image:", err);
