@@ -64,7 +64,8 @@ function buildEditPromptWithReference(instructionText: string): string {
     "3. From the reference image, ONLY extract: color palette, lighting mood, atmosphere, artistic style, texture treatment.\n" +
     "4. Apply ONLY the style/mood aspects to the target image while keeping everything else unchanged.\n" +
     "5. The output image MUST look like the TARGET image with a style filter applied, NOT like the reference image.\n" +
-    "6. Maintain the same aspect ratio and level of detail as the target image.\n\n" +
+    "6. CRITICAL: The output MUST have the EXACT same aspect ratio and dimensions as the TARGET image (IMAGE 1). IGNORE the reference image's aspect ratio completely.\n" +
+    "7. Maintain the same level of detail as the target image.\n\n" +
     "Style instructions to apply:\n" + instructionText.substring(0, MAX_PROMPT_LENGTH);
 }
 
@@ -107,7 +108,16 @@ function buildMessages(action: string, body: any, referenceImage: string | undef
     const upscaleContent: any[] = [
       {
         type: "text",
-        text: "Upscale this image by " + scale + "x. Enhance the resolution and details significantly while preserving the EXACT same content, composition, colors, lighting, and style. Add fine details, sharpen textures, and improve clarity. The output must be a higher resolution version of the EXACT same image - do not change, add, or remove anything. Make it ultra high quality and sharp.",
+        text: "You are an image upscaling expert. Your task is to recreate this EXACT image at " + scale + "x higher resolution with dramatically enhanced details.\n\n" +
+          "STRICT RULES:\n" +
+          "1. The output MUST be the EXACT same image - same subject, composition, colors, lighting, perspective. Change NOTHING about the content.\n" +
+          "2. ADD fine details that would exist at higher resolution: skin pores, hair strands, fabric weave, wood grain, leaf veins, text sharpness.\n" +
+          "3. SHARPEN all edges and textures - remove any blur or softness from the original.\n" +
+          "4. ENHANCE micro-details: reflections, shadows, surface textures, material properties.\n" +
+          "5. Maintain the EXACT same aspect ratio and framing.\n" +
+          "6. The result should look like it was originally captured with a much higher resolution camera.\n" +
+          "7. Make text, logos, and fine patterns crisp and readable.\n" +
+          "8. Output the highest quality, most detailed version possible.",
       },
       { type: "image_url", image_url: { url: editImage } },
     ];
