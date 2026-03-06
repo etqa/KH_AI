@@ -197,7 +197,7 @@ const Index = () => {
         body: {
           action: "edit",
           editImage: originalImage,
-          editInstruction: `Use this reference image style and the following prompt to edit and transform the provided image:\n\n${fullPrompt}${aspectNote}`,
+          editInstruction: `Apply ONLY the visual style described below to the target image. Do NOT change any object positions, sizes, or structural details. The output must look like the exact same photo with a style filter applied.\n\nStyle to apply:\n${fullPrompt}${aspectNote}`,
           referenceImage: image,
           model: imageModel,
           customApi,
