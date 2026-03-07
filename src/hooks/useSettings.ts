@@ -3,7 +3,7 @@ import { z } from "zod";
 
 const AppSettingsSchema = z.object({
   email: z.string().max(255).default(""),
-  apiProvider: z.enum(["lovable", "google", "openai", "custom"]).default("lovable"),
+  apiProvider: z.enum(["google", "openai", "custom"]).default("google"),
   googleApiKey: z.string().max(500).default(""),
   openaiApiKey: z.string().max(500).default(""),
   customApiKey: z.string().max(500).default(""),
@@ -16,7 +16,7 @@ const STORAGE_KEY = "app-settings";
 
 const defaultSettings: AppSettings = {
   email: "",
-  apiProvider: "lovable",
+  apiProvider: "google",
   googleApiKey: "",
   openaiApiKey: "",
   customApiKey: "",
@@ -57,7 +57,7 @@ export function useSettings() {
       case "custom":
         return settings.customApiKey ? { provider: "custom", apiKey: settings.customApiKey, apiUrl: settings.customApiUrl } : null;
       default:
-        return null;
+        return null; // No fallback - user must provide their own key
     }
   }, [settings]);
 

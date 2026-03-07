@@ -13,7 +13,7 @@ const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (error.message.includes("API_KEY") || error.message.includes("configured")) {
+    if (error.message.includes("API") || error.message.includes("مفتاح")) {
       return "خطأ في إعداد الخدمة";
     }
     if (error.message.includes("AI API")) return "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً";
@@ -42,11 +42,7 @@ function getApiConfig(customApi: any) {
         return { url: validated.apiUrl || "https://api.openai.com/v1/chat/completions", apiKey: validated.apiKey };
     }
   }
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("API_KEY not configured");
-  }
-  return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: LOVABLE_API_KEY };
+  throw new Error("يجب إدخال مفتاح API في الإعدادات");
 }
 
 function validateImageData(img: any): boolean {
