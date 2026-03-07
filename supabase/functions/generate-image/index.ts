@@ -120,16 +120,17 @@ function buildMessages(action: string, body: any, referenceImage: string | undef
     const upscaleContent: any[] = [
       {
         type: "text",
-        text: "You are an image upscaling expert. Your task is to recreate this EXACT image at " + scale + "x higher resolution with dramatically enhanced details.\n\n" +
-          "STRICT RULES:\n" +
-          "1. The output MUST be the EXACT same image - same subject, composition, colors, lighting, perspective. Change NOTHING about the content.\n" +
-          "2. ADD fine details that would exist at higher resolution: skin pores, hair strands, fabric weave, wood grain, leaf veins, text sharpness.\n" +
-          "3. SHARPEN all edges and textures - remove any blur or softness from the original.\n" +
-          "4. ENHANCE micro-details: reflections, shadows, surface textures, material properties.\n" +
-          "5. Maintain the EXACT same aspect ratio and framing.\n" +
-          "6. The result should look like it was originally captured with a much higher resolution camera.\n" +
-          "7. Make text, logos, and fine patterns crisp and readable.\n" +
-          "8. Output the highest quality, most detailed version possible.",
+        text: `You are a high-end AI super-resolution and image enhancement expert. Your task is to perform a ${scale}x upscale on this image, transforming it into a high-fidelity, professional-grade result.
+        
+        STRICT ENHANCEMENT RULES:
+        1. CONTENT FIDELITY: Maintain the EXACT composition, subjects, colors, and lighting. Do NOT add new objects or change the scene.
+        2. SHARPNESS & CLARITY: Dramatically increase edge sharpness. Remove all noise, compression artifacts, and blurriness.
+        3. TEXTURE SYNTHESIS: Generate realistic, high-frequency micro-textures that would be visible at high resolution (e.g., fine stone grain, wood fibers, fabric weave, intricate leaf veins, sharp architectural edges).
+        4. DETAIL RECOVERY: Enhance small details like reflections in glass, shadows, and distant objects to make them crisp and well-defined.
+        5. LITHOGRAPHY & TEXT: If there is any text or logos, make them perfectly legible and sharp.
+        6. PROFESSIONAL FINISH: The final result must look like a native high-resolution photograph taken with a high-end 8K camera, not an AI-scaled image.
+        
+        Output only the enhanced ${scale}x image.`
       },
       { type: "image_url", image_url: { url: editImage } },
     ];
