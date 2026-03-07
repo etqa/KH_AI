@@ -156,6 +156,7 @@ const Index = () => {
       toast.error("الرجاء رفع صورة أولاً");
       return;
     }
+    const enabledOptions = options.filter((o) => o.enabled).map((o) => o.labelEn);
     if (enabledOptions.length === 0) {
       toast.error("الرجاء تفعيل خيار واحد على الأقل");
       return;
