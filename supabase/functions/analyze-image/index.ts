@@ -24,8 +24,8 @@ const ALLOWED_OPTIONS = [
 
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (error.message.includes("API") || error.message.includes("مفتاح")) {
-      return "يجب إدخال مفتاح API في الإعدادات";
+    if (error.message.includes("API_KEY") || error.message.includes("configured")) {
+      return "خطأ في إعداد الخدمة";
     }
     if (error.message.includes("AI API")) return "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً";
     if (error.message.includes("No content")) return "لم يتم الحصول على نتيجة، حاول مجدداً";
@@ -53,7 +53,11 @@ function getApiConfig(customApi: any) {
         return { url: validated.apiUrl || "https://api.openai.com/v1/chat/completions", apiKey: validated.apiKey };
     }
   }
-  throw new Error("يجب إدخال مفتاح API في الإعدادات");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) {
+    throw new Error("API_KEY not configured");
+  }
+  return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: LOVABLE_API_KEY };
 }
 
 serve(async (req) => {

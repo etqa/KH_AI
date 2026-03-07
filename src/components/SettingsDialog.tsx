@@ -26,7 +26,8 @@ interface SettingsDialogProps {
 }
 
 const providers = [
-  { value: "google", label: "Google Gemini (مجاني)", description: "احصل على مفتاح API مجاني من Google" },
+  { value: "lovable", label: "Lovable AI (افتراضي)", description: "يستخدم رصيد المنصة" },
+  { value: "google", label: "Google Gemini", description: "استخدم مفتاح API الخاص بك" },
   { value: "openai", label: "OpenAI", description: "استخدم مفتاح API الخاص بك" },
   { value: "custom", label: "مخصص", description: "أدخل رابط ومفتاح API يدوياً" },
 ];
@@ -203,17 +204,10 @@ const SettingsDialog = ({ settings, onUpdate }: SettingsDialogProps) => {
           )}
 
           {/* Info box */}
-          <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              💡 مفتاح API الخاص بك يُحفظ محلياً في المتصفح فقط ويُرسل بشكل آمن عبر الخادم. لا يتم تخزينه على أي خادم خارجي.
-            </p>
-          </div>
-
-          {/* Google API Key is free note */}
-          {settings.apiProvider === "google" && !settings.googleApiKey && (
-            <div className="rounded-xl bg-accent/10 border border-accent/30 p-3">
-              <p className="text-xs text-foreground leading-relaxed font-semibold">
-                ⚠️ يجب إدخال مفتاح API للتمكن من استخدام التطبيق. يمكنك الحصول على مفتاح مجاني من Google AI Studio.
+          {settings.apiProvider !== "lovable" && (
+            <div className="rounded-xl bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                💡 مفتاح API الخاص بك يُحفظ محلياً في المتصفح فقط ويُرسل بشكل آمن عبر الخادم. لا يتم تخزينه على أي خادم خارجي.
               </p>
             </div>
           )}
