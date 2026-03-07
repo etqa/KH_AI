@@ -13,7 +13,7 @@ const MAX_IMAGE_SIZE = 20 * 1024 * 1024;
 
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (error.message.includes("API_KEY") || error.message.includes("configured")) {
+    if (error.message.includes("API") || error.message.includes("مفتاح")) {
       return "خطأ في إعداد الخدمة";
     }
     if (error.message.includes("AI API")) return "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً";

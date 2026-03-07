@@ -24,8 +24,8 @@ const ALLOWED_OPTIONS = [
 
 function getSafeErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    if (error.message.includes("API_KEY") || error.message.includes("configured")) {
-      return "خطأ في إعداد الخدمة";
+    if (error.message.includes("API") || error.message.includes("مفتاح")) {
+      return "يجب إدخال مفتاح API في الإعدادات";
     }
     if (error.message.includes("AI API")) return "خدمة الذكاء الاصطناعي غير متاحة مؤقتاً";
     if (error.message.includes("No content")) return "لم يتم الحصول على نتيجة، حاول مجدداً";
