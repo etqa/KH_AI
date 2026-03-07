@@ -53,11 +53,7 @@ function getApiConfig(customApi: any) {
         return { url: validated.apiUrl || "https://api.openai.com/v1/chat/completions", apiKey: validated.apiKey };
     }
   }
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("API_KEY not configured");
-  }
-  return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: LOVABLE_API_KEY };
+  throw new Error("يجب إدخال مفتاح API في الإعدادات");
 }
 
 serve(async (req) => {
