@@ -148,11 +148,14 @@ const Index = () => {
   };
 
   const handleGenerate = async () => {
+    if (!getActiveApiKey()) {
+      toast.error("يجب إدخال مفتاح API في الإعدادات أولاً ⚙️");
+      return;
+    }
     if (!image) {
       toast.error("الرجاء رفع صورة أولاً");
       return;
     }
-    const enabledOptions = options.filter((o) => o.enabled).map((o) => o.labelEn);
     if (enabledOptions.length === 0) {
       toast.error("الرجاء تفعيل خيار واحد على الأقل");
       return;
@@ -178,6 +181,10 @@ const Index = () => {
   };
 
   const handleGenerateEditedImage = async () => {
+    if (!getActiveApiKey()) {
+      toast.error("يجب إدخال مفتاح API في الإعدادات أولاً ⚙️");
+      return;
+    }
     if (!prompt || !originalImage) {
       toast.error("الرجاء رفع صورة أولاً في حاوية التوليد");
       return;
@@ -217,6 +224,10 @@ const Index = () => {
   };
 
   const handleReEditImage = async () => {
+    if (!getActiveApiKey()) {
+      toast.error("يجب إدخال مفتاح API في الإعدادات أولاً ⚙️");
+      return;
+    }
     if (!generatedImage || !editInstruction) return;
     setReEditingImage(true);
     try {
