@@ -257,6 +257,20 @@ const Index = () => {
     }
   };
 
+  const handleApplyManualPrompt = useCallback(() => {
+    const text = manualPrompt.trim();
+    if (!text) return;
+    const newPrompt: StructuredPrompt = {
+      titleAr: text.split("\n")[0] || "برومت يدوي",
+      titleEn: "Manual Prompt",
+      overviewAr: text,
+      overviewEn: text,
+      sections: {},
+    };
+    setPrompt(newPrompt);
+    toast.success("تم تطبيق البرومت! ✨");
+  }, [manualPrompt]);
+
   return (
     <div className="min-h-screen gradient-bg" dir="rtl">
       {/* Decorative orbs */}
