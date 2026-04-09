@@ -47,6 +47,7 @@ const Index = () => {
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
   const [promptLang, setPromptLang] = useState<"ar" | "en">("ar");
+  const [manualPrompt, setManualPrompt] = useState("");
 
   // Image viewer state
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -256,6 +257,20 @@ const Index = () => {
     }
   };
 
+  const handleApplyManualPrompt = useCallback(() => {
+    const text = manualPrompt.trim();
+    if (!text) return;
+    const newPrompt: StructuredPrompt = {
+      titleAr: text.split("\n")[0] || "برومت يدوي",
+      titleEn: "Manual Prompt",
+      overviewAr: text,
+      overviewEn: text,
+      sections: {},
+    };
+    setPrompt(newPrompt);
+    toast.success("تم تطبيق البرومت! ✨");
+  }, [manualPrompt]);
+
   return (
     <div className="min-h-screen gradient-bg" dir="rtl">
       {/* Decorative orbs */}
@@ -358,35 +373,56 @@ const Index = () => {
           </Button>
         </motion.div>
 
-        {/* Collapsible Prompt Result */}
-        {prompt && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+        {/* Prompt Section - Always visible */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <button
+            onClick={() => setPromptOpen(!promptOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
           >
-            <button
-              onClick={() => setPromptOpen(!promptOpen)}
-              className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
-            >
-              <span className="flex items-center gap-2">📝 البرومت</span>
-              {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </button>
-            <AnimatePresence>
-              {promptOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="overflow-hidden"
-                >
+            <span className="flex items-center gap-2">📝 البرومت</span>
+            {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {promptOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                {prompt ? (
                   <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.section>
-        )}
+                ) : (
+                  <div className="glass-card rounded-xl p-5 gradient-border space-y-4">
+                    <p className="text-muted-foreground text-sm text-center mb-3">
+                      يمكنك كتابة البرومت يدوياً أو رفع صورة مرجعية لإنشائه تلقائياً
+                    </p>
+                    <Textarea
+                      value={manualPrompt}
+                      onChange={(e) => setManualPrompt(e.target.value)}
+                      placeholder="اكتب البرومت هنا... مثال: مبنى حديث بتصميم مستقبلي مع إضاءة نيون زرقاء وسماء مليئة بالنجوم..."
+                      className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[120px]"
+                      dir="rtl"
+                    />
+                    <Button
+                      onClick={handleApplyManualPrompt}
+                      disabled={!manualPrompt.trim()}
+                      className="w-full rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+                    >
+                      <Wand2 className="h-4 w-4 ml-2" />
+                      استخدام هذا البرومت
+                    </Button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.section>
 
         {/* Generation Results - Always visible */}
         <motion.section
