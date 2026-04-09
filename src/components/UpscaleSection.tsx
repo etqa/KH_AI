@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 interface UpscaleSectionProps {
   imageModel: string;
@@ -79,7 +80,13 @@ const UpscaleSection = ({
       toast.success(`تم تكبير الصورة ${scale}X بنجاح! 🔍`);
     } catch (err: any) {
       console.error("Error upscaling:", err);
-      toast.error(err.message || "حدث خطأ أثناء تكبير الصورة");
+      let msg = "حدث خطأ أثناء تكبير الصورة";
+      if (err instanceof FunctionsHttpError) {
+        try { const b = await err.context.json(); if (b?.error) msg = b.error; } catch {}
+      } else if (err?.message && !err.message.includes("non-2xx")) {
+        msg = err.message;
+      }
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -15,6 +15,18 @@ import SettingsDialog from "@/components/SettingsDialog";
 import ImageViewer from "@/components/ImageViewer";
 import UpscaleSection from "@/components/UpscaleSection";
 import { useSettings } from "@/hooks/useSettings";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
+async function extractErrorMessage(err: any, fallback: string): Promise<string> {
+  if (err instanceof FunctionsHttpError) {
+    try {
+      const body = await err.context.json();
+      if (body?.error) return body.error;
+    } catch { /* ignore */ }
+  }
+  if (err?.message && !err.message.includes("non-2xx")) return err.message;
+  return fallback;
+}
 
 const Index = () => {
   const { settings, updateSettings, getActiveApiKey } = useSettings();
@@ -171,7 +183,8 @@ const Index = () => {
       toast.success("تم إنشاء البرومت بنجاح! ✨");
     } catch (err: any) {
       console.error("Error generating prompt:", err);
-      toast.error(err.message || "حدث خطأ أثناء إنشاء البرومت");
+      const msg = await extractErrorMessage(err, "حدث خطأ أثناء إنشاء البرومت");
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -210,7 +223,8 @@ const Index = () => {
       toast.success("تم توليد الصورة بنجاح! 🎨");
     } catch (err: any) {
       console.error("Error generating image:", err);
-      toast.error(err.message || "حدث خطأ أثناء توليد الصورة");
+      const msg = await extractErrorMessage(err, "حدث خطأ أثناء توليد الصورة");
+      toast.error(msg);
     } finally {
       setGeneratingImage(false);
     }
@@ -235,7 +249,8 @@ const Index = () => {
       toast.success("تم تعديل الصورة بنجاح! ✏️");
     } catch (err: any) {
       console.error("Error re-editing image:", err);
-      toast.error(err.message || "حدث خطأ أثناء تعديل الصورة");
+      const msg = await extractErrorMessage(err, "حدث خطأ أثناء تعديل الصورة");
+      toast.error(msg);
     } finally {
       setReEditingImage(false);
     }
