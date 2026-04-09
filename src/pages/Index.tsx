@@ -15,6 +15,18 @@ import SettingsDialog from "@/components/SettingsDialog";
 import ImageViewer from "@/components/ImageViewer";
 import UpscaleSection from "@/components/UpscaleSection";
 import { useSettings } from "@/hooks/useSettings";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
+async function extractErrorMessage(err: any, fallback: string): Promise<string> {
+  if (err instanceof FunctionsHttpError) {
+    try {
+      const body = await err.context.json();
+      if (body?.error) return body.error;
+    } catch { /* ignore */ }
+  }
+  if (err?.message && !err.message.includes("non-2xx")) return err.message;
+  return fallback;
+}
 
 const Index = () => {
   const { settings, updateSettings, getActiveApiKey } = useSettings();
