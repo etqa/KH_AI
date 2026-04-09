@@ -358,130 +358,127 @@ const Index = () => {
           </Button>
         </motion.div>
 
-        {/* Results */}
+        {/* Collapsible Prompt Result */}
         {prompt && (
-          <>
-            {/* Collapsible Prompt Result */}
-            <motion.section
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8"
+          <motion.section
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <button
+              onClick={() => setPromptOpen(!promptOpen)}
+              className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
             >
-              <button
-                onClick={() => setPromptOpen(!promptOpen)}
-                className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
-              >
-                <span className="flex items-center gap-2">📝 البرومت</span>
-                {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
-              <AnimatePresence>
-                {promptOpen && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.section>
-
-            {/* Generation Results */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mt-6"
-            >
-              <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                🖼️ نتائج التوليد والتعديل
-              </h2>
-              {/* Upload original image */}
-              <div className="mb-4">
-                <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
-                  <span>🖼️</span>
-                  <span>ارفع الصورة لتطبيق البرومت عليها</span>
-                </h3>
-                {originalImage ? (
-                  <div className="relative glass-card rounded-xl p-3 gradient-border">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
-                      onClick={() => { setOriginalImage(null); }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                    <img
-                      src={originalImage}
-                      alt="Original"
-                      className="w-full max-h-[250px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => openViewer(originalImage)}
-                    />
-                    <Button
-                      onClick={handleGenerateEditedImage}
-                      disabled={!prompt || generatingImage}
-                      className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
-                    >
-                      {generatingImage ? (
-                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                      ) : (
-                        <Wand2 className="h-4 w-4 ml-2" />
-                      )}
-                      تطبيق البرومت على الصورة
-                    </Button>
-                  </div>
-                ) : (
-                  <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
-                )}
-              </div>
-
-              {/* Results grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <ImageContainer
-                  label="النتيجة المولّدة"
-                  emoji="🎨"
-                  image={generatedImage}
-                  loading={generatingImage}
-                  onImageClick={() => generatedImage && openViewer(generatedImage)}
-                  onImageReplace={setGeneratedImage}
-                  containerId="generated"
-                  onDragStart={handleDragStart}
-                  onDrop={handleDrop}
-                />
-
-                <div className="flex flex-col gap-3">
-                  <ImageContainer
-                    label="النتيجة بعد التعديل"
-                    emoji="✏️"
-                    image={reEditedImage}
-                    loading={reEditingImage}
-                    actionLabel="تعديل الصورة المولّدة"
-                    actionIcon="edit"
-                    onAction={handleReEditImage}
-                    disabled={!generatedImage || !editInstruction}
-                    onImageClick={() => reEditedImage && openViewer(reEditedImage)}
-                    onImageReplace={setReEditedImage}
-                    containerId="reedited"
-                    onDragStart={handleDragStart}
-                    onDrop={handleDrop}
-                  />
-                  {generatedImage && (
-                    <Textarea
-                      value={editInstruction}
-                      onChange={(e) => setEditInstruction(e.target.value)}
-                      placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
-                      className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
-                      dir="rtl"
-                    />
-                  )}
-                </div>
-              </div>
-            </motion.section>
-          </>
+              <span className="flex items-center gap-2">📝 البرومت</span>
+              {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </button>
+            <AnimatePresence>
+              {promptOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.section>
         )}
+
+        {/* Generation Results - Always visible */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6"
+        >
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            🖼️ نتائج التوليد والتعديل
+          </h2>
+          {/* Upload original image */}
+          <div className="mb-4">
+            <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
+              <span>🖼️</span>
+              <span>ارفع الصورة لتطبيق البرومت عليها</span>
+            </h3>
+            {originalImage ? (
+              <div className="relative glass-card rounded-xl p-3 gradient-border">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
+                  onClick={() => { setOriginalImage(null); }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+                <img
+                  src={originalImage}
+                  alt="Original"
+                  className="w-full max-h-[250px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => openViewer(originalImage)}
+                />
+                <Button
+                  onClick={handleGenerateEditedImage}
+                  disabled={!prompt || generatingImage}
+                  className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+                >
+                  {generatingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  ) : (
+                    <Wand2 className="h-4 w-4 ml-2" />
+                  )}
+                  تطبيق البرومت على الصورة
+                </Button>
+              </div>
+            ) : (
+              <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+            )}
+          </div>
+
+          {/* Results grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ImageContainer
+              label="النتيجة المولّدة"
+              emoji="🎨"
+              image={generatedImage}
+              loading={generatingImage}
+              onImageClick={() => generatedImage && openViewer(generatedImage)}
+              onImageReplace={setGeneratedImage}
+              containerId="generated"
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+            />
+
+            <div className="flex flex-col gap-3">
+              <ImageContainer
+                label="النتيجة بعد التعديل"
+                emoji="✏️"
+                image={reEditedImage}
+                loading={reEditingImage}
+                actionLabel="تعديل الصورة المولّدة"
+                actionIcon="edit"
+                onAction={handleReEditImage}
+                disabled={!generatedImage || !editInstruction}
+                onImageClick={() => reEditedImage && openViewer(reEditedImage)}
+                onImageReplace={setReEditedImage}
+                containerId="reedited"
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
+              />
+              {generatedImage && (
+                <Textarea
+                  value={editInstruction}
+                  onChange={(e) => setEditInstruction(e.target.value)}
+                  placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
+                  className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
+                  dir="rtl"
+                />
+              )}
+            </div>
+          </div>
+        </motion.section>
 
         {/* Upscale Section */}
         <UpscaleSection
