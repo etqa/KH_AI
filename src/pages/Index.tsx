@@ -47,6 +47,7 @@ const Index = () => {
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
   const [promptLang, setPromptLang] = useState<"ar" | "en">("ar");
+  const [manualPrompt, setManualPrompt] = useState("");
 
   // Image viewer state
   const [viewerOpen, setViewerOpen] = useState(false);
