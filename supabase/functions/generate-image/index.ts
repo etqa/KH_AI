@@ -222,11 +222,32 @@ serve(async (req) => {
     }
 
     const aiResponse = await response.json();
+    console.log("AI response structure:", JSON.stringify(aiResponse).substring(0, 500));
     const message = aiResponse.choices?.[0]?.message;
-    const imageUrl = message?.images?.[0]?.image_url?.url;
-    const text = message?.content || "";
+    
+    // Try multiple paths to find the generated image
+    let imageUrl = message?.images?.[0]?.image_url?.url;
+    
+    // Alternative: image might be in content array
+    if (!imageUrl && Array.isArray(message?.content)) {
+      const imgPart = message.content.find((p: any) => p.type === "image_url" || p.type === "image");
+      if (imgPart) {
+        imageUrl = imgPart.image_url?.url || imgPart.url;
+      }
+    }
+    
+    // Alternative: inline base64 in content parts
+    if (!imageUrl && Array.isArray(message?.content)) {
+      const imgPart = message.content.find((p: any) => p.type === "image" && p.source?.data);
+      if (imgPart) {
+        imageUrl = `data:${imgPart.source.media_type || "image/png"};base64,${imgPart.source.data}`;
+      }
+    }
+
+    const text = typeof message?.content === "string" ? message.content : "";
 
     if (!imageUrl) {
+      console.error("Full AI response:", JSON.stringify(aiResponse).substring(0, 2000));
       throw new Error("No image generated");
     }
 
