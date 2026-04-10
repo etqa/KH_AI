@@ -1,4 +1,3 @@
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 
@@ -30,17 +29,18 @@ interface PromptOptionsProps {
 
 const PromptOptions = ({ options, onToggle }: PromptOptionsProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
       {options.map((opt, i) => (
         <motion.div
           key={opt.id}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.05 }}
-          className={`flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-200
+          onClick={() => onToggle(opt.id)}
+          className={`flex items-center justify-between rounded-xl px-4 py-3 cursor-pointer transition-all duration-200 select-none
             ${opt.enabled
-              ? "glass-card gradient-border"
-              : "bg-muted/20 opacity-60"
+              ? "glass-card gradient-border ring-1 ring-primary/30"
+              : "bg-muted/30 opacity-50 hover:opacity-70"
             }`}
         >
           <Label
@@ -50,11 +50,13 @@ const PromptOptions = ({ options, onToggle }: PromptOptionsProps) => {
             <span className="text-lg">{opt.emoji}</span>
             <span className="text-foreground">{opt.labelAr}</span>
           </Label>
-          <Switch
-            id={opt.id}
-            checked={opt.enabled}
-            onCheckedChange={() => onToggle(opt.id)}
-          />
+          <div className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-all duration-200 ${opt.enabled ? 'bg-primary justify-end' : 'bg-muted-foreground/30 justify-start'}`}>
+            <motion.div
+              layout
+              className={`w-5 h-5 rounded-full shadow-md ${opt.enabled ? 'bg-primary-foreground' : 'bg-muted-foreground/60'}`}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            />
+          </div>
         </motion.div>
       ))}
     </div>

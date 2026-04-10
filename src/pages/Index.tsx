@@ -343,7 +343,7 @@ const Index = () => {
         >
           <button
             onClick={() => setOptionsOpen(!optionsOpen)}
-            className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3 rounded-xl bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200 shadow-md shadow-primary/20"
           >
             <span className="flex items-center gap-2">⚙️ خيارات البرومت</span>
             {optionsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -397,7 +397,7 @@ const Index = () => {
         >
           <button
             onClick={() => setPromptOpen(!promptOpen)}
-            className="w-full flex items-center justify-between text-lg font-bold text-foreground mb-4 hover:text-primary transition-colors"
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3 rounded-xl bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200 shadow-md shadow-primary/20"
           >
             <span className="flex items-center gap-2">📝 البرومت</span>
             {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
