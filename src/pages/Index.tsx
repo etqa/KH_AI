@@ -194,54 +194,68 @@ const Index = () => {
   };
 
   const handleGenerateEditedImage = async () => {
-    if (!prompt || !originalImage) {
-      toast.error("الرجاء رفع صورة أولاً في حاوية التوليد");
+    if (!prompt || originalImages.length === 0) {
+      toast.error("الرجاء رفع صورة واحدة على الأقل");
       return;
     }
     setGeneratingImage(true);
+    setGeneratingProgress({ current: 0, total: originalImages.length });
+    const results: Record<number, string> = {};
     try {
       const fullPrompt = buildFullPrompt(prompt, promptLang);
       const customApi = getActiveApiKey();
-      
-      // Get original image dimensions to preserve aspect ratio
-      const imgDims = await getImageDimensions(originalImage);
-      const aspectNote = imgDims 
-        ? `\n\nCRITICAL: The output image MUST have the EXACT same aspect ratio as the target image (${imgDims.width}x${imgDims.height}, ratio ${(imgDims.width/imgDims.height).toFixed(3)}). Do NOT use the reference image's aspect ratio or dimensions.`
-        : "";
-      
-      const { data, error } = await supabase.functions.invoke("generate-image", {
-        body: {
-          action: "edit",
-          editImage: originalImage,
-          editInstruction: `Apply ONLY the visual style described below to the target image. Do NOT change any object positions, sizes, or structural details. The output must look like the exact same photo with a style filter applied.\n\nStyle to apply:\n${fullPrompt}${aspectNote}`,
-          referenceImage: image,
-          model: imageModel,
-          customApi,
-        },
-      });
-      if (error) throw error;
-      // Crop generated image to match original aspect ratio
-      const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
-      setGeneratedImage(croppedImage);
-      toast.success("تم توليد الصورة بنجاح! 🎨");
+
+      for (let i = 0; i < originalImages.length; i++) {
+        setGeneratingProgress({ current: i + 1, total: originalImages.length });
+        try {
+          const imgDims = await getImageDimensions(originalImages[i]);
+          const aspectNote = imgDims
+            ? `\n\nCRITICAL: The output image MUST have the EXACT same aspect ratio as the target image (${imgDims.width}x${imgDims.height}, ratio ${(imgDims.width/imgDims.height).toFixed(3)}). Do NOT use the reference image's aspect ratio or dimensions.`
+            : "";
+
+          const { data, error } = await supabase.functions.invoke("generate-image", {
+            body: {
+              action: "edit",
+              editImage: originalImages[i],
+              editInstruction: `Apply ONLY the visual style described below to the target image. Do NOT change any object positions, sizes, or structural details. The output must look like the exact same photo with a style filter applied.\n\nStyle to apply:\n${fullPrompt}${aspectNote}`,
+              referenceImage: image,
+              model: imageModel,
+              customApi,
+            },
+          });
+          if (error) throw error;
+          const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
+          results[i] = croppedImage;
+          setGeneratedImages((prev) => ({ ...prev, [i]: croppedImage }));
+        } catch (err: any) {
+          console.error(`Error generating image ${i + 1}:`, err);
+          const msg = await extractErrorMessage(err, `خطأ في الصورة ${i + 1}`);
+          toast.error(msg);
+        }
+      }
+      if (Object.keys(results).length > 0) {
+        toast.success(`تم توليد ${Object.keys(results).length} من ${originalImages.length} صورة بنجاح! 🎨`);
+      }
     } catch (err: any) {
-      console.error("Error generating image:", err);
-      const msg = await extractErrorMessage(err, "حدث خطأ أثناء توليد الصورة");
+      console.error("Error generating images:", err);
+      const msg = await extractErrorMessage(err, "حدث خطأ أثناء توليد الصور");
       toast.error(msg);
     } finally {
       setGeneratingImage(false);
+      setGeneratingProgress({ current: 0, total: 0 });
     }
   };
 
   const handleReEditImage = async () => {
-    if (!generatedImage || !editInstruction) return;
+    const firstGenerated = Object.values(generatedImages)[0];
+    if (!firstGenerated || !editInstruction) return;
     setReEditingImage(true);
     try {
       const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           action: "edit",
-          editImage: generatedImage,
+          editImage: firstGenerated,
           editInstruction,
           model: imageModel,
           customApi,
