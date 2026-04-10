@@ -120,10 +120,11 @@ const Index = () => {
   };
 
   // All viewable images for the viewer
+  const generatedImagesArray = Object.values(generatedImages);
   const allImages = [
     { src: image || "", label: "الصورة المرجعية" },
-    { src: originalImage || "", label: "الصورة الأصلية" },
-    { src: generatedImage || "", label: "النتيجة المولّدة" },
+    ...originalImages.map((img, i) => ({ src: img, label: `الصورة الأصلية ${i + 1}` })),
+    ...generatedImagesArray.map((img, i) => ({ src: img, label: `النتيجة المولّدة ${i + 1}` })),
     { src: reEditedImage || "", label: "النتيجة المعدّلة" },
   ].filter((img) => img.src);
 
@@ -136,7 +137,6 @@ const Index = () => {
   // Container image map for drag-and-drop
   const containerImageMap: Record<string, { get: () => string | null; set: (v: string | null) => void }> = {
     reference: { get: () => image, set: setImage },
-    generated: { get: () => generatedImage, set: setGeneratedImage },
     reedited: { get: () => reEditedImage, set: setReEditedImage },
   };
 
