@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ImageUploader from "@/components/ImageUploader";
+import MultiImageUploader from "@/components/MultiImageUploader";
 import PromptOptions, { defaultOptions, type PromptOption } from "@/components/PromptOptions";
 import PromptResult, { type StructuredPrompt } from "@/components/PromptResult";
 import ModelSelector from "@/components/ModelSelector";
