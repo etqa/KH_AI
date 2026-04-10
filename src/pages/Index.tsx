@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ImageUploader from "@/components/ImageUploader";
+import MultiImageUploader from "@/components/MultiImageUploader";
 import PromptOptions, { defaultOptions, type PromptOption } from "@/components/PromptOptions";
 import PromptResult, { type StructuredPrompt } from "@/components/PromptResult";
 import ModelSelector from "@/components/ModelSelector";
@@ -40,10 +41,11 @@ const Index = () => {
   const [promptOpen, setPromptOpen] = useState(true);
 
   // Image generation states
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
   const [reEditedImage, setReEditedImage] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState({ current: 0, total: 0 });
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
   const [promptLang, setPromptLang] = useState<"ar" | "en">("ar");
@@ -118,10 +120,11 @@ const Index = () => {
   };
 
   // All viewable images for the viewer
+  const generatedImagesArray = Object.values(generatedImages);
   const allImages = [
     { src: image || "", label: "الصورة المرجعية" },
-    { src: originalImage || "", label: "الصورة الأصلية" },
-    { src: generatedImage || "", label: "النتيجة المولّدة" },
+    ...originalImages.map((img, i) => ({ src: img, label: `الصورة الأصلية ${i + 1}` })),
+    ...generatedImagesArray.map((img, i) => ({ src: img, label: `النتيجة المولّدة ${i + 1}` })),
     { src: reEditedImage || "", label: "النتيجة المعدّلة" },
   ].filter((img) => img.src);
 
@@ -134,7 +137,6 @@ const Index = () => {
   // Container image map for drag-and-drop
   const containerImageMap: Record<string, { get: () => string | null; set: (v: string | null) => void }> = {
     reference: { get: () => image, set: setImage },
-    generated: { get: () => generatedImage, set: setGeneratedImage },
     reedited: { get: () => reEditedImage, set: setReEditedImage },
   };
 
@@ -172,7 +174,7 @@ const Index = () => {
     }
     setLoading(true);
     setPrompt(null);
-    setGeneratedImage(null);
+    setGeneratedImages({});
     setReEditedImage(null);
     try {
       const customApi = getActiveApiKey();
@@ -192,54 +194,68 @@ const Index = () => {
   };
 
   const handleGenerateEditedImage = async () => {
-    if (!prompt || !originalImage) {
-      toast.error("الرجاء رفع صورة أولاً في حاوية التوليد");
+    if (!prompt || originalImages.length === 0) {
+      toast.error("الرجاء رفع صورة واحدة على الأقل");
       return;
     }
     setGeneratingImage(true);
+    setGeneratingProgress({ current: 0, total: originalImages.length });
+    const results: Record<number, string> = {};
     try {
       const fullPrompt = buildFullPrompt(prompt, promptLang);
       const customApi = getActiveApiKey();
-      
-      // Get original image dimensions to preserve aspect ratio
-      const imgDims = await getImageDimensions(originalImage);
-      const aspectNote = imgDims 
-        ? `\n\nCRITICAL: The output image MUST have the EXACT same aspect ratio as the target image (${imgDims.width}x${imgDims.height}, ratio ${(imgDims.width/imgDims.height).toFixed(3)}). Do NOT use the reference image's aspect ratio or dimensions.`
-        : "";
-      
-      const { data, error } = await supabase.functions.invoke("generate-image", {
-        body: {
-          action: "edit",
-          editImage: originalImage,
-          editInstruction: `Apply ONLY the visual style described below to the target image. Do NOT change any object positions, sizes, or structural details. The output must look like the exact same photo with a style filter applied.\n\nStyle to apply:\n${fullPrompt}${aspectNote}`,
-          referenceImage: image,
-          model: imageModel,
-          customApi,
-        },
-      });
-      if (error) throw error;
-      // Crop generated image to match original aspect ratio
-      const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
-      setGeneratedImage(croppedImage);
-      toast.success("تم توليد الصورة بنجاح! 🎨");
+
+      for (let i = 0; i < originalImages.length; i++) {
+        setGeneratingProgress({ current: i + 1, total: originalImages.length });
+        try {
+          const imgDims = await getImageDimensions(originalImages[i]);
+          const aspectNote = imgDims
+            ? `\n\nCRITICAL: The output image MUST have the EXACT same aspect ratio as the target image (${imgDims.width}x${imgDims.height}, ratio ${(imgDims.width/imgDims.height).toFixed(3)}). Do NOT use the reference image's aspect ratio or dimensions.`
+            : "";
+
+          const { data, error } = await supabase.functions.invoke("generate-image", {
+            body: {
+              action: "edit",
+              editImage: originalImages[i],
+              editInstruction: `Apply ONLY the visual style described below to the target image. Do NOT change any object positions, sizes, or structural details. The output must look like the exact same photo with a style filter applied.\n\nStyle to apply:\n${fullPrompt}${aspectNote}`,
+              referenceImage: image,
+              model: imageModel,
+              customApi,
+            },
+          });
+          if (error) throw error;
+          const croppedImage = await cropToAspectRatio(data.image, imgDims.width, imgDims.height);
+          results[i] = croppedImage;
+          setGeneratedImages((prev) => ({ ...prev, [i]: croppedImage }));
+        } catch (err: any) {
+          console.error(`Error generating image ${i + 1}:`, err);
+          const msg = await extractErrorMessage(err, `خطأ في الصورة ${i + 1}`);
+          toast.error(msg);
+        }
+      }
+      if (Object.keys(results).length > 0) {
+        toast.success(`تم توليد ${Object.keys(results).length} من ${originalImages.length} صورة بنجاح! 🎨`);
+      }
     } catch (err: any) {
-      console.error("Error generating image:", err);
-      const msg = await extractErrorMessage(err, "حدث خطأ أثناء توليد الصورة");
+      console.error("Error generating images:", err);
+      const msg = await extractErrorMessage(err, "حدث خطأ أثناء توليد الصور");
       toast.error(msg);
     } finally {
       setGeneratingImage(false);
+      setGeneratingProgress({ current: 0, total: 0 });
     }
   };
 
   const handleReEditImage = async () => {
-    if (!generatedImage || !editInstruction) return;
+    const firstGenerated = Object.values(generatedImages)[0];
+    if (!firstGenerated || !editInstruction) return;
     setReEditingImage(true);
     try {
       const customApi = getActiveApiKey();
       const { data, error } = await supabase.functions.invoke("generate-image", {
         body: {
           action: "edit",
-          editImage: generatedImage,
+          editImage: firstGenerated,
           editInstruction,
           model: imageModel,
           customApi,
@@ -433,77 +449,91 @@ const Index = () => {
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             🖼️ نتائج التوليد والتعديل
           </h2>
-          {/* Upload original image */}
+          {/* Upload multiple images */}
           <div className="mb-4">
             <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
               <span>🖼️</span>
-              <span>ارفع الصورة لتطبيق البرومت عليها</span>
+              <span>ارفع الصور لتطبيق البرومت عليها</span>
             </h3>
-            {originalImage ? (
-              <div className="relative glass-card rounded-xl p-3 gradient-border">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
-                  onClick={() => { setOriginalImage(null); }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-                <img
-                  src={originalImage}
-                  alt="Original"
-                  className="w-full max-h-[250px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => openViewer(originalImage)}
-                />
-                <Button
-                  onClick={handleGenerateEditedImage}
-                  disabled={!prompt || generatingImage}
-                  className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
-                >
-                  {generatingImage ? (
+            <MultiImageUploader images={originalImages} onImagesChange={setOriginalImages} />
+            {originalImages.length > 0 && (
+              <Button
+                onClick={handleGenerateEditedImage}
+                disabled={!prompt || generatingImage}
+                className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+              >
+                {generatingImage ? (
+                  <>
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  ) : (
+                    {generatingProgress.total > 1
+                      ? `جارِ المعالجة ${generatingProgress.current}/${generatingProgress.total}...`
+                      : "جارِ المعالجة..."}
+                  </>
+                ) : (
+                  <>
                     <Wand2 className="h-4 w-4 ml-2" />
-                  )}
-                  تطبيق البرومت على الصورة
-                </Button>
-              </div>
-            ) : (
-              <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                    تطبيق البرومت على {originalImages.length > 1 ? `${originalImages.length} صور` : "الصورة"}
+                  </>
+                )}
+              </Button>
             )}
           </div>
 
           {/* Results grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ImageContainer
-              label="النتيجة المولّدة"
-              emoji="🎨"
-              image={generatedImage}
-              loading={generatingImage}
-              onImageClick={() => generatedImage && openViewer(generatedImage)}
-              onImageReplace={setGeneratedImage}
-              containerId="generated"
-              onDragStart={handleDragStart}
-              onDrop={handleDrop}
-            />
+          {Object.keys(generatedImages).length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <span>🎨</span>
+                <span>النتائج المولّدة ({Object.keys(generatedImages).length})</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(generatedImages).map(([idx, img]) => (
+                  <div key={idx} className="glass-card rounded-xl p-3 gradient-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground">صورة {Number(idx) + 1}</span>
+                    </div>
+                    {/* Original vs Generated side by side */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {originalImages[Number(idx)] && (
+                        <img
+                          src={originalImages[Number(idx)]}
+                          alt={`أصلية ${Number(idx) + 1}`}
+                          className="w-full aspect-square object-cover rounded-lg opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => openViewer(originalImages[Number(idx)])}
+                        />
+                      )}
+                      <img
+                        src={img}
+                        alt={`نتيجة ${Number(idx) + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openViewer(img)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            <div className="flex flex-col gap-3">
-              <ImageContainer
-                label="النتيجة بعد التعديل"
-                emoji="✏️"
-                image={reEditedImage}
-                loading={reEditingImage}
-                actionLabel="تعديل الصورة المولّدة"
-                actionIcon="edit"
-                onAction={handleReEditImage}
-                disabled={!generatedImage || !editInstruction}
-                onImageClick={() => reEditedImage && openViewer(reEditedImage)}
-                onImageReplace={setReEditedImage}
-                containerId="reedited"
-                onDragStart={handleDragStart}
-                onDrop={handleDrop}
-              />
-              {generatedImage && (
+          {/* Re-edit section */}
+          {Object.keys(generatedImages).length > 0 && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <ImageContainer
+                  label="النتيجة بعد التعديل"
+                  emoji="✏️"
+                  image={reEditedImage}
+                  loading={reEditingImage}
+                  actionLabel="تعديل أول صورة مولّدة"
+                  actionIcon="edit"
+                  onAction={handleReEditImage}
+                  disabled={Object.keys(generatedImages).length === 0 || !editInstruction}
+                  onImageClick={() => reEditedImage && openViewer(reEditedImage)}
+                  onImageReplace={setReEditedImage}
+                  containerId="reedited"
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
+                />
                 <Textarea
                   value={editInstruction}
                   onChange={(e) => setEditInstruction(e.target.value)}
@@ -511,9 +541,9 @@ const Index = () => {
                   className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
                   dir="rtl"
                 />
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.section>
 
         {/* Upscale Section */}
