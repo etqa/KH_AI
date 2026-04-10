@@ -449,77 +449,91 @@ const Index = () => {
           <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
             🖼️ نتائج التوليد والتعديل
           </h2>
-          {/* Upload original image */}
+          {/* Upload multiple images */}
           <div className="mb-4">
             <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
               <span>🖼️</span>
-              <span>ارفع الصورة لتطبيق البرومت عليها</span>
+              <span>ارفع الصور لتطبيق البرومت عليها</span>
             </h3>
-            {originalImage ? (
-              <div className="relative glass-card rounded-xl p-3 gradient-border">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 left-2 h-7 w-7 z-10 bg-background/60 backdrop-blur-sm rounded-full"
-                  onClick={() => { setOriginalImage(null); }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-                <img
-                  src={originalImage}
-                  alt="Original"
-                  className="w-full max-h-[250px] object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => openViewer(originalImage)}
-                />
-                <Button
-                  onClick={handleGenerateEditedImage}
-                  disabled={!prompt || generatingImage}
-                  className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
-                >
-                  {generatingImage ? (
+            <MultiImageUploader images={originalImages} onImagesChange={setOriginalImages} />
+            {originalImages.length > 0 && (
+              <Button
+                onClick={handleGenerateEditedImage}
+                disabled={!prompt || generatingImage}
+                className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+              >
+                {generatingImage ? (
+                  <>
                     <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  ) : (
+                    {generatingProgress.total > 1
+                      ? `جارِ المعالجة ${generatingProgress.current}/${generatingProgress.total}...`
+                      : "جارِ المعالجة..."}
+                  </>
+                ) : (
+                  <>
                     <Wand2 className="h-4 w-4 ml-2" />
-                  )}
-                  تطبيق البرومت على الصورة
-                </Button>
-              </div>
-            ) : (
-              <ImageUploader image={originalImage} onImageChange={setOriginalImage} />
+                    تطبيق البرومت على {originalImages.length > 1 ? `${originalImages.length} صور` : "الصورة"}
+                  </>
+                )}
+              </Button>
             )}
           </div>
 
           {/* Results grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ImageContainer
-              label="النتيجة المولّدة"
-              emoji="🎨"
-              image={generatedImage}
-              loading={generatingImage}
-              onImageClick={() => generatedImage && openViewer(generatedImage)}
-              onImageReplace={setGeneratedImage}
-              containerId="generated"
-              onDragStart={handleDragStart}
-              onDrop={handleDrop}
-            />
+          {Object.keys(generatedImages).length > 0 && (
+            <div className="space-y-4">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <span>🎨</span>
+                <span>النتائج المولّدة ({Object.keys(generatedImages).length})</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {Object.entries(generatedImages).map(([idx, img]) => (
+                  <div key={idx} className="glass-card rounded-xl p-3 gradient-border space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground">صورة {Number(idx) + 1}</span>
+                    </div>
+                    {/* Original vs Generated side by side */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {originalImages[Number(idx)] && (
+                        <img
+                          src={originalImages[Number(idx)]}
+                          alt={`أصلية ${Number(idx) + 1}`}
+                          className="w-full aspect-square object-cover rounded-lg opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => openViewer(originalImages[Number(idx)])}
+                        />
+                      )}
+                      <img
+                        src={img}
+                        alt={`نتيجة ${Number(idx) + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openViewer(img)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-            <div className="flex flex-col gap-3">
-              <ImageContainer
-                label="النتيجة بعد التعديل"
-                emoji="✏️"
-                image={reEditedImage}
-                loading={reEditingImage}
-                actionLabel="تعديل الصورة المولّدة"
-                actionIcon="edit"
-                onAction={handleReEditImage}
-                disabled={!generatedImage || !editInstruction}
-                onImageClick={() => reEditedImage && openViewer(reEditedImage)}
-                onImageReplace={setReEditedImage}
-                containerId="reedited"
-                onDragStart={handleDragStart}
-                onDrop={handleDrop}
-              />
-              {generatedImage && (
+          {/* Re-edit section */}
+          {Object.keys(generatedImages).length > 0 && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-3">
+                <ImageContainer
+                  label="النتيجة بعد التعديل"
+                  emoji="✏️"
+                  image={reEditedImage}
+                  loading={reEditingImage}
+                  actionLabel="تعديل أول صورة مولّدة"
+                  actionIcon="edit"
+                  onAction={handleReEditImage}
+                  disabled={Object.keys(generatedImages).length === 0 || !editInstruction}
+                  onImageClick={() => reEditedImage && openViewer(reEditedImage)}
+                  onImageReplace={setReEditedImage}
+                  containerId="reedited"
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
+                />
                 <Textarea
                   value={editInstruction}
                   onChange={(e) => setEditInstruction(e.target.value)}
@@ -527,9 +541,9 @@ const Index = () => {
                   className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
                   dir="rtl"
                 />
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.section>
 
         {/* Upscale Section */}
