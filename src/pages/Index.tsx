@@ -41,10 +41,11 @@ const Index = () => {
   const [promptOpen, setPromptOpen] = useState(true);
 
   // Image generation states
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
+  const [generatedImages, setGeneratedImages] = useState<Record<number, string>>({});
   const [reEditedImage, setReEditedImage] = useState<string | null>(null);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingProgress, setGeneratingProgress] = useState({ current: 0, total: 0 });
   const [reEditingImage, setReEditingImage] = useState(false);
   const [editInstruction, setEditInstruction] = useState("");
   const [promptLang, setPromptLang] = useState<"ar" | "en">("ar");
