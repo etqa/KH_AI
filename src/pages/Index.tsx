@@ -174,7 +174,7 @@ const Index = () => {
     }
     setLoading(true);
     setPrompt(null);
-    setGeneratedImage(null);
+    setGeneratedImages({});
     setReEditedImage(null);
     try {
       const customApi = getActiveApiKey();
