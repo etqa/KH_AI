@@ -14,12 +14,14 @@ interface UpscaleSectionProps {
   onDrop?: (e: React.DragEvent) => void;
   allContainerImages?: { id: string; label: string; src: string }[];
   onImageClick?: (src: string) => void;
+  embedded?: boolean;
 }
 
 const UpscaleSection = ({
   imageModel,
   getActiveApiKey,
   onImageClick,
+  embedded,
 }: UpscaleSectionProps) => {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [upscaledImage, setUpscaledImage] = useState<string | null>(null);
@@ -99,17 +101,8 @@ const UpscaleSection = ({
     link.click();
   };
 
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mt-8"
-    >
-      <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-        🔍 تكبير الصورة (Upscale)
-      </h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  const content = (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Source image */}
         <div className="glass-card rounded-xl p-4 gradient-border">
           <div className="flex items-center justify-between mb-3">
@@ -238,6 +231,21 @@ const UpscaleSection = ({
         className="hidden"
         onChange={handleFileUpload}
       />
+    </div>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-8"
+    >
+      <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+        🔍 تكبير الصورة (Upscale)
+      </h2>
+      {content}
     </motion.section>
   );
 };
