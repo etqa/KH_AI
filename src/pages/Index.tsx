@@ -38,10 +38,10 @@ const Index = () => {
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
   const [referenceOpen, setReferenceOpen] = useState(true);
-  const [optionsOpen, setOptionsOpen] = useState(true);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const [promptOpen, setPromptOpen] = useState(true);
   const [resultsOpen, setResultsOpen] = useState(true);
-  const [upscaleOpen, setUpscaleOpen] = useState(true);
+  const [upscaleOpen, setUpscaleOpen] = useState(false);
 
   // Image generation states
   const [originalImages, setOriginalImages] = useState<string[]>([]);
