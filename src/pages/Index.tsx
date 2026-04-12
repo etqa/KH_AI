@@ -37,8 +37,11 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState("google/gemini-3-flash-preview");
   const [imageModel, setImageModel] = useState("google/gemini-2.5-flash-image");
+  const [referenceOpen, setReferenceOpen] = useState(true);
   const [optionsOpen, setOptionsOpen] = useState(true);
   const [promptOpen, setPromptOpen] = useState(true);
+  const [resultsOpen, setResultsOpen] = useState(true);
+  const [upscaleOpen, setUpscaleOpen] = useState(true);
 
   // Image generation states
   const [originalImages, setOriginalImages] = useState<string[]>([]);
@@ -314,24 +317,37 @@ const Index = () => {
           </p>
         </motion.header>
 
-        {/* Reference Image Only */}
+        {/* Reference Image - Collapsible */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-8"
+          className="mb-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
         >
-          <div className="flex flex-col gap-3">
-            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-              <span>📸</span>
-              <span>الصورة المرجعية</span>
-            </h3>
-            <ImageUploader image={image} onImageChange={setImage} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <ModelSelector value={model} onChange={setModel} />
-              <ImageModelSelector value={imageModel} onChange={setImageModel} />
-            </div>
-          </div>
+          <button
+            onClick={() => setReferenceOpen(!referenceOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
+          >
+            <span className="flex items-center gap-2">📸 الصورة المرجعية</span>
+            {referenceOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {referenceOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden p-4 space-y-3"
+              >
+                <ImageUploader image={image} onImageChange={setImage} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <ModelSelector value={model} onChange={setModel} />
+                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {/* Collapsible Options */}
@@ -412,7 +428,7 @@ const Index = () => {
                 className="overflow-hidden p-4"
               >
                 {prompt ? (
-                  <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} />
+                  <PromptResult prompt={prompt} onPromptChange={setPrompt} onActiveLangChange={setPromptLang} model={model} getActiveApiKey={getActiveApiKey} />
                 ) : (
                   <div className="space-y-4">
                     <p className="text-muted-foreground text-sm text-center mb-3">
@@ -440,118 +456,159 @@ const Index = () => {
           </AnimatePresence>
         </motion.section>
 
-        {/* Generation Results - Always visible */}
+        {/* Generation Results - Collapsible */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-6"
+          className="mb-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
         >
-          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-            🖼️ نتائج التوليد والتعديل
-          </h2>
-          {/* Upload multiple images */}
-          <div className="mb-4">
-            <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
-              <span>🖼️</span>
-              <span>ارفع الصور لتطبيق البرومت عليها</span>
-            </h3>
-            <MultiImageUploader images={originalImages} onImagesChange={setOriginalImages} />
-            {originalImages.length > 0 && (
-              <Button
-                onClick={handleGenerateEditedImage}
-                disabled={!prompt || generatingImage}
-                className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+          <button
+            onClick={() => setResultsOpen(!resultsOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
+          >
+            <span className="flex items-center gap-2">🖼️ نتائج التوليد والتعديل</span>
+            {resultsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {resultsOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden p-4"
               >
-                {generatingImage ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    {generatingProgress.total > 1
-                      ? `جارِ المعالجة ${generatingProgress.current}/${generatingProgress.total}...`
-                      : "جارِ المعالجة..."}
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="h-4 w-4 ml-2" />
-                    تطبيق البرومت على {originalImages.length > 1 ? `${originalImages.length} صور` : "الصورة"}
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-
-          {/* Results grid */}
-          {Object.keys(generatedImages).length > 0 && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                <span>🎨</span>
-                <span>النتائج المولّدة ({Object.keys(generatedImages).length})</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {Object.entries(generatedImages).map(([idx, img]) => (
-                  <div key={idx} className="glass-card rounded-xl p-3 gradient-border space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-muted-foreground">صورة {Number(idx) + 1}</span>
-                    </div>
-                    {/* Original vs Generated side by side */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {originalImages[Number(idx)] && (
-                        <img
-                          src={originalImages[Number(idx)]}
-                          alt={`أصلية ${Number(idx) + 1}`}
-                          className="w-full aspect-square object-cover rounded-lg opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => openViewer(originalImages[Number(idx)])}
-                        />
+                {/* Upload multiple images */}
+                <div className="mb-4">
+                  <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
+                    <span>🖼️</span>
+                    <span>ارفع الصور لتطبيق البرومت عليها</span>
+                  </h3>
+                  <MultiImageUploader images={originalImages} onImagesChange={setOriginalImages} />
+                  {originalImages.length > 0 && (
+                    <Button
+                      onClick={handleGenerateEditedImage}
+                      disabled={!prompt || generatingImage}
+                      className="w-full mt-3 rounded-xl h-10 text-sm font-bold bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 text-primary-foreground"
+                    >
+                      {generatingImage ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                          {generatingProgress.total > 1
+                            ? `جارِ المعالجة ${generatingProgress.current}/${generatingProgress.total}...`
+                            : "جارِ المعالجة..."}
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4 ml-2" />
+                          تطبيق البرومت على {originalImages.length > 1 ? `${originalImages.length} صور` : "الصورة"}
+                        </>
                       )}
-                      <img
-                        src={img}
-                        alt={`نتيجة ${Number(idx) + 1}`}
-                        className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openViewer(img)}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Results grid */}
+                {Object.keys(generatedImages).length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                      <span>🎨</span>
+                      <span>النتائج المولّدة ({Object.keys(generatedImages).length})</span>
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {Object.entries(generatedImages).map(([idx, img]) => (
+                        <div key={idx} className="glass-card rounded-xl p-3 gradient-border space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-muted-foreground">صورة {Number(idx) + 1}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {originalImages[Number(idx)] && (
+                              <img
+                                src={originalImages[Number(idx)]}
+                                alt={`أصلية ${Number(idx) + 1}`}
+                                className="w-full aspect-square object-cover rounded-lg opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => openViewer(originalImages[Number(idx)])}
+                              />
+                            )}
+                            <img
+                              src={img}
+                              alt={`نتيجة ${Number(idx) + 1}`}
+                              className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => openViewer(img)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Re-edit section */}
+                {Object.keys(generatedImages).length > 0 && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-3">
+                      <ImageContainer
+                        label="النتيجة بعد التعديل"
+                        emoji="✏️"
+                        image={reEditedImage}
+                        loading={reEditingImage}
+                        actionLabel="تعديل أول صورة مولّدة"
+                        actionIcon="edit"
+                        onAction={handleReEditImage}
+                        disabled={Object.keys(generatedImages).length === 0 || !editInstruction}
+                        onImageClick={() => reEditedImage && openViewer(reEditedImage)}
+                        onImageReplace={setReEditedImage}
+                        containerId="reedited"
+                        onDragStart={handleDragStart}
+                        onDrop={handleDrop}
+                      />
+                      <Textarea
+                        value={editInstruction}
+                        onChange={(e) => setEditInstruction(e.target.value)}
+                        placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
+                        className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
+                        dir="rtl"
                       />
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Re-edit section */}
-          {Object.keys(generatedImages).length > 0 && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-3">
-                <ImageContainer
-                  label="النتيجة بعد التعديل"
-                  emoji="✏️"
-                  image={reEditedImage}
-                  loading={reEditingImage}
-                  actionLabel="تعديل أول صورة مولّدة"
-                  actionIcon="edit"
-                  onAction={handleReEditImage}
-                  disabled={Object.keys(generatedImages).length === 0 || !editInstruction}
-                  onImageClick={() => reEditedImage && openViewer(reEditedImage)}
-                  onImageReplace={setReEditedImage}
-                  containerId="reedited"
-                  onDragStart={handleDragStart}
-                  onDrop={handleDrop}
-                />
-                <Textarea
-                  value={editInstruction}
-                  onChange={(e) => setEditInstruction(e.target.value)}
-                  placeholder="أدخل تعليمات التعديل... مثال: اجعل الألوان أكثر دفئاً، أضف غروب الشمس..."
-                  className="rounded-xl bg-background/50 border-border/30 text-sm min-h-[80px]"
-                  dir="rtl"
-                />
-              </div>
-            </div>
-          )}
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
-        {/* Upscale Section */}
-        <UpscaleSection
-          imageModel={imageModel}
-          getActiveApiKey={getActiveApiKey}
-          onImageClick={openViewer}
-        />
+        {/* Upscale Section - Collapsible */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
+        >
+          <button
+            onClick={() => setUpscaleOpen(!upscaleOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
+          >
+            <span className="flex items-center gap-2">🔍 تكبير الصورة (Upscale)</span>
+            {upscaleOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {upscaleOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden p-4"
+              >
+                <UpscaleSection
+                  imageModel={imageModel}
+                  getActiveApiKey={getActiveApiKey}
+                  onImageClick={openViewer}
+                  embedded
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.section>
 
         {/* Footer */}
         <footer className="mt-12 text-center text-xs text-muted-foreground">

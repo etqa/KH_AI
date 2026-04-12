@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Languages, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PromptSection {
   ar: string;
@@ -49,11 +50,14 @@ interface PromptResultProps {
   prompt: StructuredPrompt;
   onPromptChange?: (updated: StructuredPrompt) => void;
   onActiveLangChange?: (lang: "ar" | "en") => void;
+  model?: string;
+  getActiveApiKey?: () => any;
 }
 
-const PromptResult = ({ prompt, onPromptChange, onActiveLangChange }: PromptResultProps) => {
+const PromptResult = ({ prompt, onPromptChange, onActiveLangChange, model, getActiveApiKey }: PromptResultProps) => {
   const [copiedLang, setCopiedLang] = useState<string | null>(null);
   const [activeLang, setActiveLang] = useState<"ar" | "en">("ar");
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     onActiveLangChange?.(activeLang);
@@ -75,6 +79,39 @@ const PromptResult = ({ prompt, onPromptChange, onActiveLangChange }: PromptResu
     setCopiedLang(lang);
     toast.success(lang === "ar" ? "تم النسخ!" : "Copied!");
     setTimeout(() => setCopiedLang(null), 2000);
+  };
+
+  const handleTranslate = async () => {
+    if (!onPromptChange) return;
+    const sourceLang = activeLang === "ar" ? "ar" : "en";
+    const targetLang = activeLang === "ar" ? "en" : "ar";
+    const sourceText = buildFullText(sourceLang);
+
+    setTranslating(true);
+    try {
+      const customApi = getActiveApiKey?.();
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: {
+          translateMode: true,
+          sourceText,
+          sourceLang,
+          targetLang,
+          prompt,
+          model: model || "google/gemini-3-flash-preview",
+          customApi,
+        },
+      });
+      if (error) throw error;
+      if (data) {
+        onPromptChange(data as StructuredPrompt);
+        toast.success(targetLang === "ar" ? "تمت الترجمة للعربية! 🌐" : "Translated to English! 🌐");
+      }
+    } catch (err: any) {
+      console.error("Translation error:", err);
+      toast.error("حدث خطأ أثناء الترجمة");
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const updateField = useCallback((field: string, value: string) => {
@@ -106,14 +143,30 @@ const PromptResult = ({ prompt, onPromptChange, onActiveLangChange }: PromptResu
       className="w-full"
     >
       <Tabs defaultValue="ar" className="w-full" dir="rtl" onValueChange={(v) => setActiveLang(v as "ar" | "en")}>
-        <TabsList className="w-full bg-muted/30 rounded-xl">
-          <TabsTrigger value="ar" className="flex-1 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            🇸🇦 عربي
-          </TabsTrigger>
-          <TabsTrigger value="en" className="flex-1 rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground">
-            🇬🇧 English
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-2">
+          <TabsList className="flex-1 bg-muted/30 rounded-xl">
+            <TabsTrigger value="ar" className="flex-1 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              🇸🇦 عربي
+            </TabsTrigger>
+            <TabsTrigger value="en" className="flex-1 rounded-lg data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground">
+              🇬🇧 English
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTranslate}
+            disabled={translating}
+            className="rounded-lg h-9 px-3 text-xs font-bold border-primary/30 hover:bg-primary/10 gap-1.5 shrink-0"
+          >
+            {translating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Languages className="h-3.5 w-3.5" />
+            )}
+            {translating ? "جارِ الترجمة..." : activeLang === "ar" ? "ترجم للإنجليزية" : "Translate to Arabic"}
+          </Button>
+        </div>
 
         {(["ar", "en"] as const).map((lang) => (
           <TabsContent key={lang} value={lang} className="mt-4">
