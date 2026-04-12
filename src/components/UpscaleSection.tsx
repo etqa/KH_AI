@@ -102,7 +102,8 @@ const UpscaleSection = ({
   };
 
   const content = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Source image */}
         <div className="glass-card rounded-xl p-4 gradient-border">
           <div className="flex items-center justify-between mb-3">
@@ -231,7 +232,7 @@ const UpscaleSection = ({
         className="hidden"
         onChange={handleFileUpload}
       />
-    </div>
+    </>
   );
 
   if (embedded) return content;
