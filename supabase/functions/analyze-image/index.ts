@@ -75,7 +75,62 @@ serve(async (req) => {
       });
     }
 
-    const { image, options, model, customApi } = body;
+    const { image, options, model, customApi, translateMode, sourceText, sourceLang, targetLang, prompt: existingPrompt } = body;
+
+    // Handle translation mode
+    if (translateMode && existingPrompt) {
+      const selectedModel = (typeof model === "string" && ALLOWED_MODELS.includes(model)) ? model : "google/gemini-3-flash-preview";
+      const apiConfig = getApiConfig(customApi);
+      
+      const tgtLang = targetLang === "ar" ? "Arabic" : "English";
+      const srcLang = sourceLang === "ar" ? "Arabic" : "English";
+      
+      const translatePrompt = `You are an expert translator. Translate the following structured prompt from ${srcLang} to ${tgtLang}.
+Keep the same JSON structure. Only translate the text content, preserving section keys exactly as they are.
+
+Current prompt JSON:
+${JSON.stringify(existingPrompt)}
+
+IMPORTANT: Return ONLY valid JSON with the SAME structure. Update ONLY the "${targetLang}" fields (titleAr/titleEn, overviewAr/overviewEn, and sections[key].${targetLang}).
+Keep the "${sourceLang}" fields unchanged. Use professional terminology appropriate for photography/art prompts.`;
+
+      const response = await fetch(apiConfig.url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiConfig.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: "system", content: translatePrompt },
+            { role: "user", content: `Translate the ${sourceLang} content to ${tgtLang} and return the updated JSON.` },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Translation API error:", response.status);
+        throw new Error("AI API error");
+      }
+
+      const aiResp = await response.json();
+      const content = aiResp.choices?.[0]?.message?.content;
+      if (!content) throw new Error("No content");
+
+      let result;
+      try {
+        result = JSON.parse(content);
+      } catch {
+        const jsonMatch = content.match(/\{[\s\S]*"titleAr"[\s\S]*"sections"[\s\S]*\}/);
+        if (jsonMatch) result = JSON.parse(jsonMatch[0]);
+        else throw new Error("Failed to parse translation");
+      }
+
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Validate image
     if (!image || typeof image !== "string") {
