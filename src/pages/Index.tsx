@@ -317,24 +317,37 @@ const Index = () => {
           </p>
         </motion.header>
 
-        {/* Reference Image Only */}
+        {/* Reference Image - Collapsible */}
         <motion.section
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-8"
+          className="mb-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
         >
-          <div className="flex flex-col gap-3">
-            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-              <span>📸</span>
-              <span>الصورة المرجعية</span>
-            </h3>
-            <ImageUploader image={image} onImageChange={setImage} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <ModelSelector value={model} onChange={setModel} />
-              <ImageModelSelector value={imageModel} onChange={setImageModel} />
-            </div>
-          </div>
+          <button
+            onClick={() => setReferenceOpen(!referenceOpen)}
+            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
+          >
+            <span className="flex items-center gap-2">📸 الصورة المرجعية</span>
+            {referenceOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+          <AnimatePresence>
+            {referenceOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden p-4 space-y-3"
+              >
+                <ImageUploader image={image} onImageChange={setImage} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <ModelSelector value={model} onChange={setModel} />
+                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.section>
 
         {/* Collapsible Options */}
