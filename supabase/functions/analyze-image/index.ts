@@ -111,6 +111,16 @@ Keep the "${sourceLang}" fields unchanged. Use professional terminology appropri
 
       if (!response.ok) {
         console.error("Translation API error:", response.status);
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار" }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "تم تجاوز الحد المسموح، حاول لاحقاً" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         throw new Error("AI API error");
       }
 
