@@ -30,7 +30,7 @@ async function extractErrorMessage(err: any, fallback: string): Promise<string> 
 }
 
 const Index = () => {
-  const { settings, updateSettings, getActiveApiKey } = useSettings();
+  const { settings, activeAccount, setActiveAccount, addAccount, removeAccount, updateActiveAccount, getActiveApiKey } = useSettings();
   const [image, setImage] = useState<string | null>(null);
   const [options, setOptions] = useState<PromptOption[]>(defaultOptions);
   const [prompt, setPrompt] = useState<StructuredPrompt | null>(null);
@@ -310,7 +310,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-black gradient-text">
               وصف الصورة
             </h1>
-            <SettingsDialog settings={settings} onUpdate={updateSettings} />
+            <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
           </div>
           <p className="text-muted-foreground text-base md:text-lg">
             حلّل صورتك بالذكاء الاصطناعي واحصل على برومت احترافي جاهز للاستخدام
