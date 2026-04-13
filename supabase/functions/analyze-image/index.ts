@@ -9,11 +9,13 @@ const corsHeaders = {
 const ALLOWED_PROVIDERS = ["google", "openai", "custom"];
 const ALLOWED_MODELS = [
   "google/gemini-3-flash-preview",
+  "google/gemini-3.1-pro-preview",
   "google/gemini-2.5-flash",
   "google/gemini-2.5-pro",
   "google/gemini-3-pro-preview",
   "openai/gpt-5-mini",
   "openai/gpt-5-nano",
+  "openai/gpt-5",
 ];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB in base64 chars (~7.5MB actual)
 const ALLOWED_OPTIONS = [
