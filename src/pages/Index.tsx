@@ -310,7 +310,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-black gradient-text">
               وصف الصورة
             </h1>
-            <SettingsDialog settings={settings} onUpdate={updateSettings} />
+            <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
           </div>
           <p className="text-muted-foreground text-base md:text-lg">
             حلّل صورتك بالذكاء الاصطناعي واحصل على برومت احترافي جاهز للاستخدام
