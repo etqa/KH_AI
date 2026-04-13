@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -292,6 +292,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen gradient-bg" dir="rtl">
+      {/* Top Navbar */}
+      <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto max-w-4xl px-4 h-14 flex items-center justify-between">
+          <h1 className="text-xl font-bold gradient-text">Archives AI</h1>
+          <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
+        </div>
+      </nav>
+
       {/* Decorative orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/10 blur-[100px]" />
@@ -306,12 +314,6 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <h1 className="text-4xl md:text-5xl font-black gradient-text">
-              وصف الصورة
-            </h1>
-            <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
-          </div>
           <p className="text-muted-foreground text-base md:text-lg">
             حلّل صورتك بالذكاء الاصطناعي واحصل على برومت احترافي جاهز للاستخدام
           </p>
