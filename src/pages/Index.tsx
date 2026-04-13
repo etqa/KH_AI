@@ -292,6 +292,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen gradient-bg" dir="rtl">
+      {/* Top Navbar */}
+      <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto max-w-4xl px-4 h-14 flex items-center justify-between">
+          <h1 className="text-xl font-bold gradient-text">Archives AI</h1>
+          <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
+        </div>
+      </nav>
+
       {/* Decorative orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/10 blur-[100px]" />
