@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2 } from "lucide-react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -306,12 +306,6 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-10"
         >
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <h1 className="text-4xl md:text-5xl font-black gradient-text">
-              وصف الصورة
-            </h1>
-            <SettingsDialog settings={settings} activeAccount={activeAccount} onUpdateAccount={updateActiveAccount} onSetActive={setActiveAccount} onAddAccount={addAccount} onRemoveAccount={removeAccount} />
-          </div>
           <p className="text-muted-foreground text-base md:text-lg">
             حلّل صورتك بالذكاء الاصطناعي واحصل على برومت احترافي جاهز للاستخدام
           </p>
