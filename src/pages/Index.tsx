@@ -30,7 +30,7 @@ async function extractErrorMessage(err: any, fallback: string): Promise<string> 
 }
 
 const Index = () => {
-  const { settings, updateSettings, getActiveApiKey } = useSettings();
+  const { settings, activeAccount, setActiveAccount, addAccount, removeAccount, updateActiveAccount, getActiveApiKey } = useSettings();
   const [image, setImage] = useState<string | null>(null);
   const [options, setOptions] = useState<PromptOption[]>(defaultOptions);
   const [prompt, setPrompt] = useState<StructuredPrompt | null>(null);
