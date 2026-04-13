@@ -237,7 +237,8 @@ Be extremely detailed and specific about what you observe in the image.`;
           status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      console.error("AI API error:", response.status);
+      const errBody = await response.text();
+      console.error("AI API error:", response.status, errBody);
       throw new Error("AI API error");
     }
 
