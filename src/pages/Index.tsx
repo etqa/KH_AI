@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings, Camera, SlidersHorizontal, FileText, Images, Search, Palette, PenLine } from "lucide-react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings, Camera, SlidersHorizontal, FileText, Images, Maximize, Palette, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
