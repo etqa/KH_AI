@@ -368,39 +368,29 @@ const Index = () => {
                     )}
                   </AnimatePresence>
                 </div>
+
+                {/* Generate Button */}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !image}
+                  className="w-full h-12 text-base font-bold rounded-xl bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/25"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin ml-2" />
+                      جارِ التحليل...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 ml-2" />
+                      إنشاء البرومت
+                    </>
+                  )}
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.section>
-
-
-
-
-        {/* Generate Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <Button
-            onClick={handleGenerate}
-            disabled={loading || !image}
-            className="w-full h-14 text-lg font-bold rounded-xl bg-gradient-to-l from-primary via-secondary to-accent hover:opacity-90 transition-opacity text-primary-foreground shadow-lg shadow-primary/25"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin ml-2" />
-                جارِ التحليل...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 ml-2" />
-                إنشاء البرومت
-              </>
-            )}
-          </Button>
-        </motion.div>
 
         {/* Prompt Section - Always visible */}
         <motion.section
