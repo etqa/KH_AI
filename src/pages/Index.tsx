@@ -343,43 +343,38 @@ const Index = () => {
                 className="overflow-hidden p-4 space-y-3"
               >
                 <ImageUploader image={image} onImageChange={setImage} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <ModelSelector value={model} onChange={setModel} />
-                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                <ModelSelector value={model} onChange={setModel} />
+                
+                {/* Prompt Options - nested collapsible */}
+                <div className="rounded-xl border border-border/30 overflow-hidden">
+                  <button
+                    onClick={() => setOptionsOpen(!optionsOpen)}
+                    className="w-full flex items-center justify-between text-sm font-bold text-foreground px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors"
+                  >
+                    <span className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" /> خيارات البرومت</span>
+                    {optionsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  <AnimatePresence>
+                    {optionsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden px-4 pb-3"
+                      >
+                        <PromptOptions options={options} onToggle={handleToggle} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.section>
 
-        {/* Collapsible Options */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden"
-        >
-          <button
-            onClick={() => setOptionsOpen(!optionsOpen)}
-            className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
-          >
-            <span className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" /> خيارات البرومت</span>
-            {optionsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-          </button>
-          <AnimatePresence>
-            {optionsOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden px-4 pb-4"
-              >
-                <PromptOptions options={options} onToggle={handleToggle} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.section>
+
+
 
         {/* Generate Button */}
         <motion.div
@@ -480,6 +475,9 @@ const Index = () => {
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden p-4"
               >
+                <div className="mb-4">
+                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                </div>
                 {/* Upload multiple images */}
                 <div className="mb-4">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
