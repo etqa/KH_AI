@@ -1,3 +1,4 @@
+import { Brush } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface ImageModel {
@@ -21,7 +22,7 @@ const ImageModelSelector = ({ value, onChange }: ImageModelSelectorProps) => {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-lg">🎨</span>
+      <Brush className="h-5 w-5 text-primary" />
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="flex-1 glass-card border-border/30 rounded-xl h-11">
           <SelectValue>
