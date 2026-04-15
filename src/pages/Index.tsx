@@ -330,7 +330,7 @@ const Index = () => {
             onClick={() => setReferenceOpen(!referenceOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2">📸 الصورة المرجعية</span>
+            <span className="flex items-center gap-2"><Camera className="h-5 w-5" /> الصورة المرجعية</span>
             {referenceOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
@@ -363,7 +363,7 @@ const Index = () => {
             onClick={() => setOptionsOpen(!optionsOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2">⚙️ خيارات البرومت</span>
+            <span className="flex items-center gap-2"><SlidersHorizontal className="h-5 w-5" /> خيارات البرومت</span>
             {optionsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
@@ -417,7 +417,7 @@ const Index = () => {
             onClick={() => setPromptOpen(!promptOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2">📝 البرومت</span>
+            <span className="flex items-center gap-2"><FileText className="h-5 w-5" /> البرومت</span>
             {promptOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
@@ -468,7 +468,7 @@ const Index = () => {
             onClick={() => setResultsOpen(!resultsOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2">🖼️ نتائج التوليد والتعديل</span>
+            <span className="flex items-center gap-2"><Images className="h-5 w-5" /> نتائج التوليد والتعديل</span>
             {resultsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
@@ -483,7 +483,7 @@ const Index = () => {
                 {/* Upload multiple images */}
                 <div className="mb-4">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
-                    <span>🖼️</span>
+                    <Images className="h-4 w-4" />
                     <span>ارفع الصور لتطبيق البرومت عليها</span>
                   </h3>
                   <MultiImageUploader images={originalImages} onImagesChange={setOriginalImages} />
@@ -514,7 +514,7 @@ const Index = () => {
                 {Object.keys(generatedImages).length > 0 && (
                   <div className="space-y-4">
                     <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
-                      <span>🎨</span>
+                      <Palette className="h-4 w-4" />
                       <span>النتائج المولّدة ({Object.keys(generatedImages).length})</span>
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -589,7 +589,7 @@ const Index = () => {
             onClick={() => setUpscaleOpen(!upscaleOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2">🔍 تكبير الصورة (Upscale)</span>
+            <span className="flex items-center gap-2"><Search className="h-5 w-5" /> تكبير الصورة (Upscale)</span>
             {upscaleOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
