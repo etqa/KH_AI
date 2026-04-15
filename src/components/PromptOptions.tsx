@@ -1,25 +1,41 @@
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { Aperture, Clapperboard, TreePine, Palette, Layers, Sun, Clock, Frame, Heart, LayoutGrid } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
 export interface PromptOption {
   id: string;
   labelAr: string;
   labelEn: string;
   emoji: string;
+  icon: LucideIcon;
   enabled: boolean;
 }
 
+const iconMap: Record<string, LucideIcon> = {
+  camera_angle: Aperture,
+  camera_effects: Clapperboard,
+  environment: TreePine,
+  colors: Palette,
+  materials: Layers,
+  lighting: Sun,
+  time: Clock,
+  art_style: Frame,
+  mood: Heart,
+  composition: LayoutGrid,
+};
+
 export const defaultOptions: PromptOption[] = [
-  { id: "camera_angle", labelAr: "زاوية الكاميرا", labelEn: "Camera Angle", emoji: "📷", enabled: true },
-  { id: "camera_effects", labelAr: "تأثيرات الكاميرا", labelEn: "Camera Effects", emoji: "🎬", enabled: true },
-  { id: "environment", labelAr: "البيئة المحيطة", labelEn: "Environment", emoji: "🌍", enabled: true },
-  { id: "colors", labelAr: "الألوان", labelEn: "Colors", emoji: "🎨", enabled: true },
-  { id: "materials", labelAr: "الخامات والمواد", labelEn: "Materials & Textures", emoji: "🧱", enabled: true },
-  { id: "lighting", labelAr: "الإضاءة", labelEn: "Lighting", emoji: "💡", enabled: true },
-  { id: "time", labelAr: "التوقيت", labelEn: "Time of Day", emoji: "⏰", enabled: true },
-  { id: "art_style", labelAr: "أسلوب الصورة", labelEn: "Art Style", emoji: "🖼️", enabled: true },
-  { id: "mood", labelAr: "التعبيرات والمشاعر", labelEn: "Mood & Emotion", emoji: "😊", enabled: true },
-  { id: "composition", labelAr: "التكوين", labelEn: "Composition", emoji: "📐", enabled: true },
+  { id: "camera_angle", labelAr: "زاوية الكاميرا", labelEn: "Camera Angle", emoji: "📷", icon: Aperture, enabled: true },
+  { id: "camera_effects", labelAr: "تأثيرات الكاميرا", labelEn: "Camera Effects", emoji: "🎬", icon: Clapperboard, enabled: true },
+  { id: "environment", labelAr: "البيئة المحيطة", labelEn: "Environment", emoji: "🌍", icon: TreePine, enabled: true },
+  { id: "colors", labelAr: "الألوان", labelEn: "Colors", emoji: "🎨", icon: Palette, enabled: true },
+  { id: "materials", labelAr: "الخامات والمواد", labelEn: "Materials & Textures", emoji: "🧱", icon: Layers, enabled: true },
+  { id: "lighting", labelAr: "الإضاءة", labelEn: "Lighting", emoji: "💡", icon: Sun, enabled: true },
+  { id: "time", labelAr: "التوقيت", labelEn: "Time of Day", emoji: "⏰", icon: Clock, enabled: true },
+  { id: "art_style", labelAr: "أسلوب الصورة", labelEn: "Art Style", emoji: "🖼️", icon: Frame, enabled: true },
+  { id: "mood", labelAr: "التعبيرات والمشاعر", labelEn: "Mood & Emotion", emoji: "😊", icon: Heart, enabled: true },
+  { id: "composition", labelAr: "التكوين", labelEn: "Composition", emoji: "📐", icon: LayoutGrid, enabled: true },
 ];
 
 interface PromptOptionsProps {
@@ -47,7 +63,7 @@ const PromptOptions = ({ options, onToggle }: PromptOptionsProps) => {
             htmlFor={opt.id}
             className="flex items-center gap-2 cursor-pointer text-sm font-medium"
           >
-            <span className="text-lg">{opt.emoji}</span>
+            {(() => { const Icon = iconMap[opt.id] || Aperture; return <Icon className="h-4 w-4 text-primary" />; })()}
             <span className="text-foreground">{opt.labelAr}</span>
           </Label>
           <div className={`w-10 h-6 rounded-full flex items-center px-0.5 transition-all duration-200 ${opt.enabled ? 'bg-primary justify-end' : 'bg-muted-foreground/30 justify-start'}`}>

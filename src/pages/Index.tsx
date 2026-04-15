@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings, Camera, SlidersHorizontal, FileText, Images, Search, Palette, PenLine } from "lucide-react";
+import { Sparkles, Loader2, X, ChevronDown, ChevronUp, Wand2, Settings, Camera, SlidersHorizontal, FileText, Images, Maximize, Palette, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -577,7 +577,7 @@ const Index = () => {
             onClick={() => setUpscaleOpen(!upscaleOpen)}
             className="w-full flex items-center justify-between text-lg font-bold text-primary-foreground px-5 py-3.5 bg-gradient-to-l from-primary/80 via-secondary/70 to-accent/60 hover:from-primary hover:via-secondary hover:to-accent transition-all duration-200"
           >
-            <span className="flex items-center gap-2"><Search className="h-5 w-5" /> تكبير الصورة (Upscale)</span>
+            <span className="flex items-center gap-2"><Maximize className="h-5 w-5" /> تكبير الصورة (Upscale)</span>
             {upscaleOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
           </button>
           <AnimatePresence>
