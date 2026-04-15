@@ -343,9 +343,30 @@ const Index = () => {
                 className="overflow-hidden p-4 space-y-3"
               >
                 <ImageUploader image={image} onImageChange={setImage} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <ModelSelector value={model} onChange={setModel} />
-                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                <ModelSelector value={model} onChange={setModel} />
+                
+                {/* Prompt Options - nested collapsible */}
+                <div className="rounded-xl border border-border/30 overflow-hidden">
+                  <button
+                    onClick={() => setOptionsOpen(!optionsOpen)}
+                    className="w-full flex items-center justify-between text-sm font-bold text-foreground px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors"
+                  >
+                    <span className="flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" /> خيارات البرومت</span>
+                    {optionsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  <AnimatePresence>
+                    {optionsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="overflow-hidden px-4 pb-3"
+                      >
+                        <PromptOptions options={options} onToggle={handleToggle} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             )}
