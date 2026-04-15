@@ -475,6 +475,9 @@ const Index = () => {
                 transition={{ duration: 0.25 }}
                 className="overflow-hidden p-4"
               >
+                <div className="mb-4">
+                  <ImageModelSelector value={imageModel} onChange={setImageModel} />
+                </div>
                 {/* Upload multiple images */}
                 <div className="mb-4">
                   <h3 className="font-bold text-foreground text-sm flex items-center gap-2 mb-3">
