@@ -103,7 +103,9 @@ function buildMessages(action: string, body: any, referenceImage: string | undef
     if (hasReference) {
       editContent.push(
         { type: "text", text: buildEditPromptWithReference(instructionText) },
+        { type: "text", text: "=== IMAGE 1: THIS IS THE TARGET IMAGE — YOU MUST EDIT THIS ONE. PRESERVE ITS EXACT COMPOSITION, OBJECTS, POSITIONS, AND ASPECT RATIO ===" },
         { type: "image_url", image_url: { url: editImage } },
+        { type: "text", text: "=== IMAGE 2: THIS IS THE STYLE REFERENCE ONLY — DO NOT COPY ITS CONTENT, COMPOSITION, OR ASPECT RATIO. USE IT ONLY FOR MOOD, LIGHTING, AND COLOR STYLE ===" },
         { type: "image_url", image_url: { url: referenceImage } }
       );
     } else {
