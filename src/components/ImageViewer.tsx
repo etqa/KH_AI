@@ -18,7 +18,10 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
   const [compareMode, setCompareMode] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const [compareIndex, setCompareIndex] = useState<number | null>(null);
+  const [sliderPos, setSliderPos] = useState(50); // percent
+  const [sliderDragging, setSliderDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const compareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
