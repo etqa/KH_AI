@@ -38,6 +38,9 @@ const ImageContainer = ({
   hideEmptyState,
 }: ImageContainerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pasteRef = usePasteImage((dataUrl) => {
+    if (onImageReplace) onImageReplace(dataUrl);
+  });
 
   const handleDownload = () => {
     if (!image) return;
