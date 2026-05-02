@@ -530,11 +530,34 @@ const Index = () => {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                       {Object.entries(generatedImages).map(([idx, img]) => (
-                        <div key={idx} className="glass-card rounded-xl p-3 gradient-border space-y-2">
+                        <div key={idx} className="glass-card rounded-xl p-4 gradient-border space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-muted-foreground">صورة {Number(idx) + 1}</span>
+                            <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                              <span>🖼️</span>
+                              <span>صورة {Number(idx) + 1}</span>
+                            </h3>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleReplaceGenerated(Number(idx))}
+                                title="استبدال"
+                              >
+                                <Replace className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => handleDownloadImage(img, `نتيجة-${Number(idx) + 1}`)}
+                                title="تحميل"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2 rounded-xl overflow-hidden bg-muted/20 p-1">
                             {originalImages[Number(idx)] && (
                               <img
                                 src={originalImages[Number(idx)]}
