@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { usePasteImage } from "@/hooks/usePasteImage";
 
 interface ImageUploaderProps {
   image: string | null;
@@ -11,6 +12,7 @@ interface ImageUploaderProps {
 const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pasteRef = usePasteImage((dataUrl) => onImageChange(dataUrl));
 
   const handleFile = useCallback(
     (file: File) => {
@@ -33,7 +35,7 @@ const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
   );
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={pasteRef} tabIndex={0}>
       <AnimatePresence mode="wait">
         {!image ? (
           <motion.div
@@ -63,7 +65,7 @@ const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
                   اسحب الصورة هنا أو اضغط للاختيار
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Drop image here or click to browse
+                  Drop image here or click — أو الصق بـ Ctrl+V
                 </p>
               </div>
             </div>

@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Wand2, RefreshCw, Download, Upload, Replace } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePasteImage } from "@/hooks/usePasteImage";
 
 interface ImageContainerProps {
   label: string;
@@ -37,6 +38,9 @@ const ImageContainer = ({
   hideEmptyState,
 }: ImageContainerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pasteRef = usePasteImage((dataUrl) => {
+    if (onImageReplace) onImageReplace(dataUrl);
+  });
 
   const handleDownload = () => {
     if (!image) return;
@@ -109,12 +113,14 @@ const ImageContainer = ({
 
   return (
     <motion.div
+      ref={pasteRef}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="glass-card rounded-xl p-4 gradient-border transition-all"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDropEvent}
+      tabIndex={0}
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-foreground text-sm flex items-center gap-2">

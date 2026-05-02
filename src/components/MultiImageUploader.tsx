@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload, X, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { usePasteImage } from "@/hooks/usePasteImage";
 
 interface MultiImageUploaderProps {
   images: string[];
@@ -11,6 +12,7 @@ interface MultiImageUploaderProps {
 const MultiImageUploader = ({ images, onImagesChange }: MultiImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pasteRef = usePasteImage((dataUrl) => onImagesChange([...images, dataUrl]));
 
   const handleFiles = useCallback(
     (files: FileList | File[]) => {
@@ -48,7 +50,7 @@ const MultiImageUploader = ({ images, onImagesChange }: MultiImageUploaderProps)
   };
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-3" ref={pasteRef} tabIndex={0}>
       {/* Image grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
