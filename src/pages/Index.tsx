@@ -165,6 +165,29 @@ const Index = () => {
     dragSourceRef.current = null;
   };
 
+  const handleDownloadImage = (src: string, name: string) => {
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = `${name}.png`;
+    link.click();
+  };
+
+  const handleReplaceGenerated = (idx: number) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setGeneratedImages((prev) => ({ ...prev, [idx]: ev.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
   const handleGenerate = async () => {
     if (!image) {
       toast.error("الرجاء رفع صورة أولاً");
