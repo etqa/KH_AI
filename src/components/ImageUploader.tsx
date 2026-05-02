@@ -35,7 +35,7 @@ const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
   );
 
   return (
-    <div className="w-full">
+    <div className="w-full" ref={pasteRef} tabIndex={0}>
       <AnimatePresence mode="wait">
         {!image ? (
           <motion.div
