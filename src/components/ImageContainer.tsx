@@ -113,12 +113,14 @@ const ImageContainer = ({
 
   return (
     <motion.div
+      ref={pasteRef}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="glass-card rounded-xl p-4 gradient-border transition-all"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDropEvent}
+      tabIndex={0}
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
