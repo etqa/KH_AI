@@ -18,7 +18,10 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
   const [compareMode, setCompareMode] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const [compareIndex, setCompareIndex] = useState<number | null>(null);
+  const [sliderPos, setSliderPos] = useState(50); // percent
+  const [sliderDragging, setSliderDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const compareRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -27,8 +30,32 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
       setSelectedIndex(initialIndex);
       setCompareIndex(null);
       setCompareMode(false);
+      setSliderPos(50);
     }
   }, [open, initialIndex]);
+
+  // Slider drag handlers
+  useEffect(() => {
+    if (!sliderDragging) return;
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const rect = compareRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const clientX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const pct = ((clientX - rect.left) / rect.width) * 100;
+      setSliderPos(Math.max(0, Math.min(100, pct)));
+    };
+    const stop = () => setSliderDragging(false);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchend", stop);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchend", stop);
+    };
+  }, [sliderDragging]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -144,31 +171,19 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
         {/* Image display */}
         <div
           ref={containerRef}
-          className={`flex-1 overflow-hidden flex ${compareMode ? "gap-1" : ""}`}
+          className="flex-1 overflow-hidden flex"
           onWheel={handleWheel}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          style={{ cursor: zoom > 1 ? (dragging ? "grabbing" : "grab") : "default" }}
+          onMouseDown={compareMode ? undefined : handleMouseDown}
+          onMouseMove={compareMode ? undefined : handleMouseMove}
+          onMouseUp={compareMode ? undefined : handleMouseUp}
+          onMouseLeave={compareMode ? undefined : handleMouseUp}
+          style={{ cursor: !compareMode && zoom > 1 ? (dragging ? "grabbing" : "grab") : "default" }}
         >
-          <div className={`flex items-center justify-center ${compareMode ? "w-1/2 border-l border-border/20" : "w-full"}`}>
-            <img
-              src={currentImage.src}
-              alt={currentImage.label}
-              className="max-w-full max-h-full object-contain select-none"
-              style={{
-                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
-                transition: dragging ? "none" : "transform 0.15s ease",
-              }}
-              draggable={false}
-            />
-          </div>
-          {compareMode && compareImage && (
-            <div className="w-1/2 flex items-center justify-center">
+          {!compareMode ? (
+            <div className="flex items-center justify-center w-full">
               <img
-                src={compareImage.src}
-                alt={compareImage.label}
+                src={currentImage.src}
+                alt={currentImage.label}
                 className="max-w-full max-h-full object-contain select-none"
                 style={{
                   transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
@@ -177,15 +192,64 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
                 draggable={false}
               />
             </div>
+          ) : (
+            <div ref={compareRef} className="relative w-full h-full select-none overflow-hidden">
+              {/* Base image (after / current) */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <img
+                  src={currentImage.src}
+                  alt={currentImage.label}
+                  className="max-w-full max-h-full object-contain"
+                  draggable={false}
+                />
+              </div>
+              {/* Top image clipped (before / compare) */}
+              {compareImage && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ clipPath: `inset(0 ${100 - sliderPos}% 0 0)` }}
+                >
+                  <img
+                    src={compareImage.src}
+                    alt={compareImage.label}
+                    className="max-w-full max-h-full object-contain"
+                    draggable={false}
+                  />
+                </div>
+              )}
+              {/* Divider */}
+              <div
+                className="absolute top-0 bottom-0 w-0.5 bg-primary shadow-[0_0_12px_hsl(var(--primary))] cursor-ew-resize"
+                style={{ left: `${sliderPos}%`, transform: "translateX(-50%)" }}
+                onMouseDown={(e) => { e.preventDefault(); setSliderDragging(true); }}
+                onTouchStart={(e) => { e.preventDefault(); setSliderDragging(true); }}
+              >
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg">
+                  <Columns className="h-5 w-5" />
+                </div>
+              </div>
+              {/* Labels overlay */}
+              {compareImage && (
+                <>
+                  <div className="absolute top-3 right-3 bg-background/70 backdrop-blur-sm px-3 py-1 rounded-md text-xs">
+                    {compareImage.label}
+                  </div>
+                  <div className="absolute top-3 left-3 bg-background/70 backdrop-blur-sm px-3 py-1 rounded-md text-xs">
+                    {currentImage.label}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
 
         {/* Labels */}
-        <div className={`flex ${compareMode ? "justify-around" : "justify-center"} p-2 border-t border-border/20`}>
-          <span className="text-xs text-muted-foreground">{currentImage.label}</span>
-          {compareMode && compareImage && (
-            <span className="text-xs text-muted-foreground">{compareImage.label}</span>
-          )}
+        <div className="flex justify-center p-2 border-t border-border/20">
+          <span className="text-xs text-muted-foreground">
+            {compareMode && compareImage
+              ? `مقارنة: ${compareImage.label} ↔ ${currentImage.label}`
+              : currentImage.label}
+          </span>
         </div>
       </motion.div>
     </AnimatePresence>
