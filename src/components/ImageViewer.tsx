@@ -30,8 +30,32 @@ const ImageViewer = ({ images, initialIndex = 0, open, onClose }: ImageViewerPro
       setSelectedIndex(initialIndex);
       setCompareIndex(null);
       setCompareMode(false);
+      setSliderPos(50);
     }
   }, [open, initialIndex]);
+
+  // Slider drag handlers
+  useEffect(() => {
+    if (!sliderDragging) return;
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const rect = compareRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const clientX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const pct = ((clientX - rect.left) / rect.width) * 100;
+      setSliderPos(Math.max(0, Math.min(100, pct)));
+    };
+    const stop = () => setSliderDragging(false);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("mouseup", stop);
+    window.addEventListener("touchend", stop);
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("mouseup", stop);
+      window.removeEventListener("touchend", stop);
+    };
+  }, [sliderDragging]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
