@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { usePasteImage } from "@/hooks/usePasteImage";
 
 interface ImageUploaderProps {
   image: string | null;
@@ -11,6 +12,7 @@ interface ImageUploaderProps {
 const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pasteRef = usePasteImage((dataUrl) => onImageChange(dataUrl));
 
   const handleFile = useCallback(
     (file: File) => {
