@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Wand2, RefreshCw, Download, Upload, Replace } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePasteImage } from "@/hooks/usePasteImage";
 
 interface ImageContainerProps {
   label: string;
