@@ -50,7 +50,7 @@ const MultiImageUploader = ({ images, onImagesChange }: MultiImageUploaderProps)
   };
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-3" ref={pasteRef} tabIndex={0}>
       {/* Image grid */}
       {images.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
