@@ -195,62 +195,82 @@ serve(async (req) => {
 
     const messages = buildMessages(action, body, referenceImage, editImage, editInstruction, prompt);
 
-    const response = await fetch(apiConfig.url, {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + apiConfig.apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: selectedModel,
-        messages,
-        modalities: ["image", "text"],
-      }),
-    });
+    const FALLBACK_MODEL = "google/gemini-2.5-flash-image";
+    const modelsToTry: string[] = [selectedModel];
+    if (selectedModel !== FALLBACK_MODEL) modelsToTry.push(FALLBACK_MODEL);
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "تم تجاوز الحد المسموح، حاول لاحقاً" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار" }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      console.error("AI API error:", response.status);
-      throw new Error("AI API error");
-    }
+    let imageUrl: string | undefined;
+    let text = "";
+    let lastProviderError: string | null = null;
 
-    const aiResponse = await response.json();
-    console.log("AI response structure:", JSON.stringify(aiResponse).substring(0, 500));
-    const message = aiResponse.choices?.[0]?.message;
-    
-    // Try multiple paths to find the generated image
-    let imageUrl = message?.images?.[0]?.image_url?.url;
-    
-    // Alternative: image might be in content array
-    if (!imageUrl && Array.isArray(message?.content)) {
-      const imgPart = message.content.find((p: any) => p.type === "image_url" || p.type === "image");
-      if (imgPart) {
-        imageUrl = imgPart.image_url?.url || imgPart.url;
-      }
-    }
-    
-    // Alternative: inline base64 in content parts
-    if (!imageUrl && Array.isArray(message?.content)) {
-      const imgPart = message.content.find((p: any) => p.type === "image" && p.source?.data);
-      if (imgPart) {
-        imageUrl = `data:${imgPart.source.media_type || "image/png"};base64,${imgPart.source.data}`;
-      }
-    }
+    for (const tryModel of modelsToTry) {
+      const response = await fetch(apiConfig.url, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + apiConfig.apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: tryModel,
+          messages,
+          modalities: ["image", "text"],
+        }),
+      });
 
-    const text = typeof message?.content === "string" ? message.content : "";
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "تم تجاوز الحد المسموح، حاول لاحقاً" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "يرجى إضافة رصيد للاستمرار" }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.error("AI API error:", response.status, "model:", tryModel);
+        lastProviderError = `AI API error ${response.status}`;
+        continue;
+      }
+
+      const aiResponse = await response.json();
+      console.log("AI response structure (model:", tryModel, "):", JSON.stringify(aiResponse).substring(0, 500));
+      const choice = aiResponse.choices?.[0];
+      const message = choice?.message;
+
+      // Detect provider-level error embedded in choice
+      if (choice?.error) {
+        console.error("Provider error for model", tryModel, ":", JSON.stringify(choice.error));
+        lastProviderError = choice.error?.metadata?.error_type || choice.error?.message || "provider_error";
+        continue; // try fallback model
+      }
+
+      imageUrl = message?.images?.[0]?.image_url?.url;
+
+      if (!imageUrl && Array.isArray(message?.content)) {
+        const imgPart = message.content.find((p: any) => p.type === "image_url" || p.type === "image");
+        if (imgPart) imageUrl = imgPart.image_url?.url || imgPart.url;
+      }
+      if (!imageUrl && Array.isArray(message?.content)) {
+        const imgPart = message.content.find((p: any) => p.type === "image" && p.source?.data);
+        if (imgPart) imageUrl = `data:${imgPart.source.media_type || "image/png"};base64,${imgPart.source.data}`;
+      }
+
+      text = typeof message?.content === "string" ? message.content : "";
+
+      if (imageUrl) break; // success
+      console.error("No image from model", tryModel, "— full response:", JSON.stringify(aiResponse).substring(0, 1500));
+      lastProviderError = "no_image_in_response";
+    }
 
     if (!imageUrl) {
-      console.error("Full AI response:", JSON.stringify(aiResponse).substring(0, 2000));
-      throw new Error("No image generated");
+      const isProviderDown = lastProviderError === "provider_unavailable" || (lastProviderError && lastProviderError.includes("502"));
+      const errMsg = isProviderDown
+        ? "نموذج التوليد غير متاح حالياً، حاول لاحقاً أو اختر نموذجاً آخر"
+        : "لم يتم توليد صورة، حاول مجدداً";
+      return new Response(JSON.stringify({ error: errMsg }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(
