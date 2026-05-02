@@ -65,7 +65,7 @@ const ImageUploader = ({ image, onImageChange }: ImageUploaderProps) => {
                   اسحب الصورة هنا أو اضغط للاختيار
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Drop image here or click to browse
+                  Drop image here or click — أو الصق بـ Ctrl+V
                 </p>
               </div>
             </div>
